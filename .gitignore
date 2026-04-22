@@ -1,0 +1,56 @@
+# Xcode
+.DS_Store
+*/build/*
+*.pbxuser
+!default.pbxuser
+mode.pbxuser
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+profile *.mov
+*.hmap
+
+# CocoaPods
+Pods/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/test_output
+fastlane/screenshots
+snapshots/
+
+# Code Injection
+iOSInjectionProject/
+
+# Backup files
+*~.nib
+*.swp
+*~
+*~.orig
+
+# Xcode Patch
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceStorage.xcshareddata-sw
+*.xcworkspace/xcuserdata/
+
+# Derived Data
+DerivedData/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+playground.xcworkspacedata
+
+# AppCode
+.idea/
+
+# Misc
+*.lock
