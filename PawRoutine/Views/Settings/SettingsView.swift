@@ -153,12 +153,12 @@ struct SettingsView: View {
                 .frame(width: 24)
             
             Text(title)
-                .font(PawRoutineTheme.Font.bodyText())
+                .font(PawRoutineTheme.PRFont.bodyText())
             
             Spacer()
             
             Text(time.wrappedValue, format: .dateTime.hour().minute())
-                .font(PawRoutineTheme.Font.bodyText(.medium))
+                .font(PawRoutineTheme.PRFont.bodyText(.medium))
                 .monospacedDigit()
             
             Image(systemName: "chevron.right")
@@ -193,11 +193,11 @@ struct SettingsView: View {
             
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(PawRoutineTheme.Font.bodyText())
+                    .font(PawRoutineTheme.PRFont.bodyText())
                 
                 if !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(PawRoutineTheme.Font.caption2())
+                        .font(PawRoutineTheme.PRFont.caption2())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                 }
             }
@@ -218,7 +218,7 @@ struct SettingsView: View {
                 .foregroundStyle(isSelected ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
             
             Text(label)
-                .font(PawRoutineTheme.Font.micro(isSelected ? .semibold : .regular))
+                .font(PawRoutineTheme.PRFont.micro(isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
         }
         .frame(maxWidth: .infinity)
@@ -295,7 +295,7 @@ struct ProFeatureCard: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Text("PawRoutine Pro")
-                                .font(PawRoutineTheme.Font.title3(.semibold))
+                                .font(PawRoutineTheme.PRFont.title3(.semibold))
                             
                             if isPro {
                                 PRTag(text: "已激活", color: .green)
@@ -303,7 +303,7 @@ struct ProFeatureCard: View {
                         }
                         
                         Text("解锁全部功能，享受完整的养宠生活")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                     
@@ -351,10 +351,10 @@ struct IAPView: View {
                     }
                     
                     Text("PawRoutine Pro")
-                        .font(PawRoutineTheme.Font.largeTitle(.bold))
+                        .font(PawRoutineTheme.PRFont.largeTitle(.bold))
                     
                     Text("解锁全部功能，享受完整的养宠生活")
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                 }
                 
@@ -375,14 +375,14 @@ struct IAPView: View {
                 VStack(spacing: PawRoutineTheme.Spacing.md) {
                     if purchaseSuccess {
                         Label("✅ 已成功激活 Pro 版！", systemImage: "checkmark.circle.fill")
-                            .font(PawRoutineTheme.Font.title3(.semibold))
+                            .font(PawRoutineTheme.PRFont.title3(.semibold))
                             .foregroundStyle(.green)
                     } else {
                         Button {
                             purchasePro()
                         } label: {
                             Text("¥ 68 实施解锁")
-                                .font(PawRoutineTheme.Font.bodyText(.semibold))
+                                .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -394,7 +394,7 @@ struct IAPView: View {
                         .disabled(isLoading)
                         
                         Text("一次购买，永久使用")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                     
@@ -411,7 +411,7 @@ struct IAPView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("关闭") { dismiss() }
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                 }
             }
         }
@@ -427,7 +427,7 @@ struct IAPView: View {
                 .foregroundStyle(isChecked ? .green : PawRoutineTheme.Colors.textTertiary)
             
             Text(title)
-                .font(PawRoutineTheme.Font.bodyText())
+                .font(PawRoutineTheme.PRFont.bodyText())
                 .foregroundStyle(isChecked ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary)
             
             Spacer()

@@ -89,7 +89,7 @@ struct MainTabView: View {
                     .symbolEffect(.bounce, value: selectedTab == tab)
                 
                 Text(tab.rawValue)
-                    .font(PawRoutineTheme.Font.micro(selectedTab == tab ? .semibold : .regular))
+                    .font(PawRoutineTheme.PRFont.micro(selectedTab == tab ? .semibold : .regular))
                     .foregroundStyle(selectedTab == tab ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
             }
             .frame(maxWidth: .infinity)

@@ -44,7 +44,7 @@ struct PawRoutineTheme {
     
     // MARK: - Typography
     
-    struct Font {
+    struct PRFont {
         static func largeTitle(_ weight: Font.Weight = .bold) -> SwiftUI.Font {
             .system(size: 28, weight: weight, design: .rounded)
         }
@@ -143,7 +143,7 @@ struct PRSectionHeader: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(PawRoutineTheme.Font.title3(.semibold))
+                .font(PawRoutineTheme.PRFont.title3(.semibold))
                 .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
             
             Spacer()
@@ -190,11 +190,11 @@ struct PRProgressRing: View {
             // 中间文字
             VStack(spacing: 2) {
                 Text("\(current)/\(total)")
-                    .font(PawRoutineTheme.Font.caption2(.bold))
+                    .font(PawRoutineTheme.PRFont.caption2(.bold))
                     .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                 
                 Text(label)
-                    .font(PawRoutineTheme.Font.micro())
+                    .font(PawRoutineTheme.PRFont.micro())
                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
             }
         }
@@ -277,7 +277,7 @@ struct PRTag: View {
     
     var body: some View {
         Text(text)
-            .font(PawRoutineTheme.Font.caption2(.medium))
+            .font(PawRoutineTheme.PRFont.caption2(.medium))
             .foregroundStyle(color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -307,12 +307,12 @@ struct PREmptyState: View {
                 .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.25))
             
             Text(title)
-                .font(PawRoutineTheme.Font.title3(.semibold))
+                .font(PawRoutineTheme.PRFont.title3(.semibold))
                 .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
             
             if let subtitle {
                 Text(subtitle)
-                    .font(PawRoutineTheme.Font.bodyText())
+                    .font(PawRoutineTheme.PRFont.bodyText())
                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     .multilineTextAlignment(.center)
             }

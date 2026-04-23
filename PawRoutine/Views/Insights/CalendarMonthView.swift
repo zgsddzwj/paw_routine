@@ -52,7 +52,7 @@ struct CalendarMonthView: View {
                 // 标题行：2025年7月 + 左右箭头
                 HStack {
                     Text(selectedMonth, format: .dateTime.year().month())
-                        .font(PawRoutineTheme.Font.title3(.semibold))
+                        .font(PawRoutineTheme.PRFont.title3(.semibold))
                     
                     Spacer()
                 }
@@ -61,7 +61,7 @@ struct CalendarMonthView: View {
                 HStack(spacing: 0) {
                     ForEach(0..<7, id: \.self) { index in
                         Text(weekdaySymbols[index])
-                            .font(PawRoutineTheme.Font.caption2(.semibold))
+                            .font(PawRoutineTheme.PRFont.caption2(.semibold))
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                             .frame(maxWidth: .infinity)
                     }
@@ -104,7 +104,7 @@ struct CalendarMonthView: View {
                     }).count
                     
                     Text("本月 \(monthCount) 条记录")
-                        .font(PawRoutineTheme.Font.caption2())
+                        .font(PawRoutineTheme.PRFont.caption2())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                 }
             }
@@ -118,7 +118,7 @@ struct CalendarMonthView: View {
                 .frame(width: 8, height: 8)
             
             Text(label)
-                .font(PawRoutineTheme.Font.micro())
+                .font(PawRoutineTheme.PRFont.micro())
                 .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
         }
     }
@@ -147,7 +147,7 @@ struct CalendarDayCell: View {
     var body: some View {
         VStack(spacing: 2) {
             Text("\(day)")
-                .font(PawRoutineTheme.Font.caption(isToday ? .bold : .regular))
+                .font(PawRoutineTheme.PRFont.caption(isToday ? .bold : .regular))
                 .foregroundStyle(
                     isToday ? .white :
                     isCurrentMonth ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary

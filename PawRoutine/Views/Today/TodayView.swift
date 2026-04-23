@@ -97,7 +97,7 @@ struct PetSelectorRow: View {
                             )
                             
                             Text(pet.name)
-                                .font(PawRoutineTheme.Font.caption2(index == selectedIndex ? .semibold : .regular))
+                                .font(PawRoutineTheme.PRFont.caption2(index == selectedIndex ? .semibold : .regular))
                                 .foregroundStyle(index == selectedIndex ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary)
                         }
                     }
@@ -120,7 +120,7 @@ struct PetSelectorRow: View {
                             )
                         
                         Text("添加")
-                            .font(PawRoutineTheme.Font.caption2())
+                            .font(PawRoutineTheme.PRFont.caption2())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                 }
@@ -159,7 +159,7 @@ struct DailyProgressRings: View {
                     Button("编辑") {
                         // TODO: 编辑目标
                     }
-                    .font(PawRoutineTheme.Font.caption(.medium))
+                    .font(PawRoutineTheme.PRFont.caption(.medium))
                     .foregroundStyle(PawRoutineTheme.Colors.primary)
                 }
                 
@@ -194,7 +194,7 @@ struct DailyProgressRings: View {
                 // 完成度提示
                 HStack(spacing: 4) {
                     Text("目前完成度")
-                        .font(PawRoutineTheme.Font.caption())
+                        .font(PawRoutineTheme.PRFont.caption())
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     
                     let totalGoal = RecordType.feeding.defaultDailyGoal + RecordType.walking.defaultDailyGoal + RecordType.bathroom.defaultDailyGoal
@@ -202,7 +202,7 @@ struct DailyProgressRings: View {
                     let pct = totalGoal > 0 ? Int(Double(totalDone) / Double(totalGoal) * 100) : 0
                     
                     Text("\(pct)%")
-                        .font(PawRoutineTheme.Font.caption(.semibold))
+                        .font(PawRoutineTheme.PRFont.caption(.semibold))
                         .foregroundStyle(PawRoutineTheme.Colors.feeding)
                     
                     Image(systemName: "face.smiling")
@@ -239,11 +239,11 @@ struct TimelineSection: View {
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
                         
                         Text("今天还没有记录")
-                            .font(PawRoutineTheme.Font.bodyText())
+                            .font(PawRoutineTheme.PRFont.bodyText())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         
                         Text("点击右下角 + 快速记录")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity)
@@ -280,7 +280,7 @@ struct TimelineItemRow: View {
                 // 左侧：时间 + 竖线
                 VStack(spacing: 0) {
                     Text(record.timestamp, format: .dateTime.hour().minute())
-                        .font(PawRoutineTheme.Font.caption2(.medium))
+                        .font(PawRoutineTheme.PRFont.caption2(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         .frame(width: 44, alignment: .trailing)
                     
@@ -307,19 +307,19 @@ struct TimelineItemRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: PawRoutineTheme.Spacing.sm) {
                             Text(record.recordType.rawValue)
-                                .font(PawRoutineTheme.Font.bodyText(.medium))
+                                .font(PawRoutineTheme.PRFont.bodyText(.medium))
                                 .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                             
                             if let note = record.note, !note.isEmpty {
                                 Text(note)
-                                    .font(PawRoutineTheme.Font.caption())
+                                    .font(PawRoutineTheme.PRFont.caption())
                                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                                     .lineLimit(1)
                             }
                         }
                         
                         Text("\(record.timestamp, format: .dateTime.hour().minute()) · \(record.timestamp.formatted(.dateTime.month().day()))")
-                            .font(PawRoutineTheme.Font.micro())
+                            .font(PawRoutineTheme.PRFont.micro())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                     

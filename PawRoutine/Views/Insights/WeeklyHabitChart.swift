@@ -47,7 +47,7 @@ struct WeeklyHabitChart: View {
                 // 标题行
                 PRSectionHeader("本周习惯分析") { trailing in
                     Text("7月8日 - 7月14日")
-                        .font(PawRoutineTheme.Font.caption())
+                        .font(PawRoutineTheme.PRFont.caption())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                 }
                 
@@ -58,11 +58,11 @@ struct WeeklyHabitChart: View {
                         .foregroundStyle(PawRoutineTheme.Colors.feeding)
                     
                     Text("累计耗时")
-                        .font(PawRoutineTheme.Font.caption2())
+                        .font(PawRoutineTheme.PRFont.caption2())
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     
                     Text("4 小时 30 分钟")
-                        .font(PawRoutineTheme.Font.caption2(.semibold))
+                        .font(PawRoutineTheme.PRFont.caption2(.semibold))
                         .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                     
                     Spacer()
@@ -92,32 +92,32 @@ struct WeeklyHabitChart: View {
                 .chartYAxis {
                     AxisMarks(position: .leading) { value in
                         AxisValueLabel("\(value.as(Int.self) ?? 0)")
-                            .font(PawRoutineTheme.Font.micro())
+                            .font(PawRoutineTheme.PRFont.micro())
                     }
                 }
                 .chartXAxis {
                     AxisMarks { value in
                         AxisValueLabel(centered: true)
-                            .font(PawRoutineTheme.Font.micro())
+                            .font(PawRoutineTheme.PRFont.micro())
                     }
                 }
                 
                 // 分类统计 + 编辑按钮
                 HStack(alignment: .center) {
                     Text("喂养次数数据")
-                        .font(PawRoutineTheme.Font.caption(.medium))
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     
                     Spacer()
                     
                     Text("\(weekData.reduce(0) { $0 + $1.totalCount }) 次")
-                        .font(PawRoutineTheme.Font.caption(.semibold))
+                        .font(PawRoutineTheme.PRFont.caption(.semibold))
                         .foregroundStyle(PawRoutineTheme.Colors.accent)
                     
                     Button("编辑") {
                         // TODO
                     }
-                    .font(PawRoutineTheme.Font.caption(.medium))
+                    .font(PawRoutineTheme.PRFont.caption(.medium))
                     .foregroundStyle(PawRoutineTheme.Colors.primary)
                 }
                 
@@ -162,7 +162,7 @@ struct WeeklyHabitChart: View {
                 .foregroundStyle(color)
             
             Text(label)
-                .font(PawRoutineTheme.Font.micro())
+                .font(PawRoutineTheme.PRFont.micro())
                 .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
         }
         .frame(maxWidth: .infinity)

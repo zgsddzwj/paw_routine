@@ -92,7 +92,7 @@ struct AddDocumentSheet: View {
                                 .font(.title)
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
                             Text("点击选择照片")
-                                .font(PawRoutineTheme.Font.bodyText())
+                                .font(PawRoutineTheme.PRFont.bodyText())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
                         }
                     )

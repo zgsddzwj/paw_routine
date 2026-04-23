@@ -76,9 +76,9 @@ struct MonthlySummaryView: View {
                         
                         VStack(spacing: 2) {
                             Text("\(Int(activityRate * 100))%")
-                                .font(PawRoutineTheme.Font.title3(.bold))
+                                .font(PawRoutineTheme.PRFont.title3(.bold))
                             Text("活跃度")
-                                .font(PawRoutineTheme.Font.micro())
+                                .font(PawRoutineTheme.PRFont.micro())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
@@ -111,12 +111,12 @@ struct MonthlySummaryView: View {
                 .frame(width: 16)
             
             Text(label)
-                .font(PawRoutineTheme.Font.bodyText())
+                .font(PawRoutineTheme.PRFont.bodyText())
             
             Spacer()
             
             Text(value)
-                .font(PawRoutineTheme.Font.bodyText(.semibold))
+                .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                 .monospacedDigit()
         }
     }
@@ -124,7 +124,7 @@ struct MonthlySummaryView: View {
     private func achievementBadge(text: String) -> some View {
         HStack(spacing: 6) {
             Text(text)
-                .font(PawRoutineTheme.Font.bodyText(.medium))
+                .font(PawRoutineTheme.PRFont.bodyText(.medium))
             Spacer()
         }
         .padding(12)

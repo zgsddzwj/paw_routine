@@ -39,7 +39,7 @@ struct QuickAddSheet: View {
                 
                 // 底部提示文字
                 Text("长按可修改时间或添加备注")
-                    .font(PawRoutineTheme.Font.caption())
+                    .font(PawRoutineTheme.PRFont.caption())
                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
             }
             .padding(.horizontal, PawRoutineTheme.Spacing.xxl)
@@ -49,7 +49,7 @@ struct QuickAddSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("完成") { dismiss() }
-                        .font(PawRoutineTheme.Font.bodyText(.medium))
+                        .font(PawRoutineTheme.PRFont.bodyText(.medium))
                 }
             }
         }
@@ -87,7 +87,7 @@ struct QuickAddSheet: View {
                             PRPetAvatar(image: pet.avatarImage, size: 32)
                             
                             Text(pet.name)
-                                .font(PawRoutineTheme.Font.caption(selectedPetIndex == index ? .semibold : .regular))
+                                .font(PawRoutineTheme.PRFont.caption(selectedPetIndex == index ? .semibold : .regular))
                                 .foregroundStyle(selectedPetIndex == index ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary)
                         }
                         .padding(.horizontal, 12)
@@ -135,7 +135,7 @@ struct QuickAddSheet: View {
                 .shadow(color: colorFor(type).opacity(0.15), radius: 6, y: 3)
                 
                 Text(type.rawValue)
-                    .font(PawRoutineTheme.Font.caption(.medium))
+                    .font(PawRoutineTheme.PRFont.caption(.medium))
                     .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
             }
         }
@@ -210,10 +210,10 @@ struct RecordDetailEditor: View {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(recordType.rawValue)
-                            .font(PawRoutineTheme.Font.title3(.semibold))
+                            .font(PawRoutineTheme.PRFont.title3(.semibold))
                         
                         Text("遛狗")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                     
@@ -228,17 +228,17 @@ struct RecordDetailEditor: View {
                 // 时间选择
                 VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
                     Text("时间")
-                        .font(PawRoutineTheme.Font.caption(.medium))
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     
                     HStack {
                         Text("今天")
-                            .font(PawRoutineTheme.Font.bodyText())
+                            .font(PawRoutineTheme.PRFont.bodyText())
                         
                         Spacer()
                         
                         Text(selectedTime, format: .dateTime.hour().minute())
-                            .font(PawRoutineTheme.Font.bodyText(.medium))
+                            .font(PawRoutineTheme.PRFont.bodyText(.medium))
                             .foregroundStyle(PawRoutineTheme.Colors.primary)
                     }
                     .padding(.vertical, 12)
@@ -249,11 +249,11 @@ struct RecordDetailEditor: View {
                 // 备注
                 VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
                     Text("备注")
-                        .font(PawRoutineTheme.Font.caption(.medium))
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     
                     TextField("今天状态很好，跑得很开心！", text: $note, axis: .vertical)
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                         .lineLimit(2...4)
                         .padding(12)
                         .background(PawRoutineTheme.Colors.bgSecondary, in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
@@ -265,7 +265,7 @@ struct RecordDetailEditor: View {
                 // 保存按钮
                 Button(action: onSave) {
                     Text("保存")
-                        .font(PawRoutineTheme.Font.bodyText(.semibold))
+                        .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -289,11 +289,11 @@ struct RecordDetailEditor: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("取消", role: .cancel, action: onCancel)
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("完成", action: onSave)
-                        .font(PawRoutineTheme.Font.bodyText(.medium))
+                        .font(PawRoutineTheme.PRFont.bodyText(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.primary)
                 }
             }

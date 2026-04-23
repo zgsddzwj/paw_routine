@@ -113,7 +113,7 @@ struct AddPetView: View {
                                 .font(.title3)
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                             Text("选择照片")
-                                .font(PawRoutineTheme.Font.caption2())
+                                .font(PawRoutineTheme.PRFont.caption2())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     )
@@ -171,7 +171,7 @@ struct AddPetView: View {
 
                     if let age = humanAge {
                         Text("≈ \(String(format: "%.1f", age)) 岁人类年龄")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                 }

@@ -65,7 +65,7 @@ struct ProfileDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Text(pet.name)
-                            .font(PawRoutineTheme.Font.title1(.bold))
+                            .font(PawRoutineTheme.PRFont.title1(.bold))
                         
                         Button { showEditSheet = true } label: {
                             Image(systemName: "pencil")
@@ -84,14 +84,14 @@ struct ProfileDetailView: View {
                     
                     HStack(spacing: 12) {
                         Label(pet.gender.rawValue, systemImage: pet.gender.icon)
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         
                         Text("·")
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         
                         Text(pet.isNeutered ? "已绝育" : "未绝育")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(pet.isNeutered ? PawRoutineTheme.Colors.secondary : PawRoutineTheme.Colors.accent)
                     }
                 }
@@ -123,21 +123,21 @@ struct ProfileDetailView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("年龄")
-                            .font(PawRoutineTheme.Font.caption(.medium))
+                            .font(PawRoutineTheme.PRFont.caption(.medium))
                             .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         
                         if let ageString = pet.ageDisplayString {
                             Text(ageString)
-                                .font(PawRoutineTheme.Font.title2(.bold))
+                                .font(PawRoutineTheme.PRFont.title2(.bold))
                             
                             if let humanAge = pet.humanAge {
                                 Text("≈ \(String(format: "%.1f", humanAge)) 岁（人类年龄）")
-                                    .font(PawRoutineTheme.Font.caption2())
+                                    .font(PawRoutineTheme.PRFont.caption2())
                                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                             }
                         } else {
                             Text("未设置生日")
-                                .font(PawRoutineTheme.Font.bodyText())
+                                .font(PawRoutineTheme.PRFont.bodyText())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
@@ -146,15 +146,15 @@ struct ProfileDetailView: View {
                     
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("出生日期")
-                            .font(PawRoutineTheme.Font.caption(.medium))
+                            .font(PawRoutineTheme.PRFont.caption(.medium))
                             .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         
                         if let birthDate = pet.birthDate {
                             Text(birthDate, format: .dateTime.year().month().day())
-                                .font(PawRoutineTheme.Font.bodyText(.semibold))
+                                .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                         } else {
                             Text("-")
-                                .font(PawRoutineTheme.Font.bodyText())
+                                .font(PawRoutineTheme.PRFont.bodyText())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
@@ -179,10 +179,10 @@ struct ProfileDetailView: View {
                     .foregroundStyle(color)
                 
                 Text(value)
-                    .font(PawRoutineTheme.Font.title3(.bold))
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
                 
                 Text(title)
-                    .font(PawRoutineTheme.Font.micro())
+                    .font(PawRoutineTheme.PRFont.micro())
                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -207,7 +207,7 @@ struct ProfileDetailView: View {
                 
                 if pet.weightRecords.isEmpty {
                     Text("还没有体重记录，点击 + 添加")
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
@@ -219,11 +219,11 @@ struct ProfileDetailView: View {
                         HStack(spacing: PawRoutineTheme.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("最新体重")
-                                    .font(PawRoutineTheme.Font.caption())
+                                    .font(PawRoutineTheme.PRFont.caption())
                                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                                 
                                 Text("\(latest.weight, specifier: "%.1f") kg")
-                                    .font(PawRoutineTheme.Font.title2(.bold))
+                                    .font(PawRoutineTheme.PRFont.title2(.bold))
                             }
                             
                             Spacer()
@@ -235,7 +235,7 @@ struct ProfileDetailView: View {
                                 Text(diffStr)
                                 Text("kg ↗")
                             }
-                            .font(PawRoutineTheme.Font.bodyText(.semibold))
+                            .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                             .foregroundStyle(diff >= 0 ? PawRoutineTheme.Colors.secondary : PawRoutineTheme.Colors.medication)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -277,7 +277,7 @@ struct ProfileDetailView: View {
                 
                 if pet.medicalRecords.isEmpty {
                     Text("还没有医疗记录")
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -298,14 +298,14 @@ struct ProfileDetailView: View {
                 HStack {
                     PRSectionHeader("证件夹") { trailing in
                         Text("\(pet.documents.count) 个文件")
-                            .font(PawRoutineTheme.Font.caption())
+                            .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                 }
                 
                 if pet.documents.isEmpty {
                     Text("还没有保存的证件照片")
-                        .font(PawRoutineTheme.Font.bodyText())
+                        .font(PawRoutineTheme.PRFont.bodyText())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -322,7 +322,7 @@ struct ProfileDetailView: View {
                     showDocumentPicker = true
                 } label: {
                     Label("添加证件照片", systemImage: "camera.on.rectangle.fill")
-                        .font(PawRoutineTheme.Font.bodyText(.medium))
+                        .font(PawRoutineTheme.PRFont.bodyText(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -351,7 +351,7 @@ struct WeightChart: View {
             .annotation(position: .overlay) {
                 if records.count <= 7 {
                     Text(record.weight, format: .number.precision(.fractionLength(1)))
-                        .font(PawRoutineTheme.Font.caption2())
+                        .font(PawRoutineTheme.PRFont.caption2())
                 }
             }
         }
@@ -359,7 +359,7 @@ struct WeightChart: View {
             AxisMarks(position: .leading) { value in
                 AxisValueLabel(centered: true) {
                     Text("\(value.as(Double.self) ?? 0, specifier: "%.1f")")
-                        .font(PawRoutineTheme.Font.micro())
+                        .font(PawRoutineTheme.PRFont.micro())
                 }
             }
         }
@@ -375,14 +375,14 @@ struct WeightHistoryRow: View {
     var body: some View {
         HStack {
             Text(record.timestamp, format: .dateTime.month().day())
-                .font(PawRoutineTheme.Font.caption())
+                .font(PawRoutineTheme.PRFont.caption())
                 .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                 .frame(width: 50, alignment: .leading)
             
             Spacer()
             
             Text("\(record.weight, specifier: "%.1f") kg")
-                .font(PawRoutineTheme.Font.bodyText(.semibold))
+                .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                 .monospacedDigit()
             
             Image(systemName: "chevron.right")
@@ -412,16 +412,16 @@ struct MedicalRecordRow: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.title)
-                    .font(PawRoutineTheme.Font.bodyText(.medium))
+                    .font(PawRoutineTheme.PRFont.bodyText(.medium))
                 
                 HStack(spacing: 8) {
                     Text(record.date, style: .date)
-                        .font(PawRoutineTheme.Font.caption())
+                        .font(PawRoutineTheme.PRFont.caption())
                         .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     
                     if let nextDue = record.nextDueDate {
                         Label("下次: \(nextDue, style: .date)", systemImage: "clock.arrow.circlepath")
-                            .font(PawRoutineTheme.Font.caption2())
+                            .font(PawRoutineTheme.PRFont.caption2())
                             .foregroundStyle(record.isReminderSet ? PawRoutineTheme.Colors.secondary : Color(.gray.opacity(0.4)))
                     }
                 }
@@ -473,7 +473,7 @@ struct DocumentThumbnail: View {
             }
             
             Text(document.title)
-                .font(PawRoutineTheme.Font.caption2())
+                .font(PawRoutineTheme.PRFont.caption2())
                 .lineLimit(1)
                 .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
         }

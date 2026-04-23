@@ -83,7 +83,7 @@ struct InsightsView: View {
                         PRPetAvatar(image: pet.avatarImage, size: 28)
                         
                         Text(pet.name)
-                            .font(PawRoutineTheme.Font.bodyText(.semibold))
+                            .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                         
                         Image(systemName: "chevron.down")
                             .font(.caption2)
@@ -101,7 +101,7 @@ struct InsightsView: View {
                     }
                     
                     Text(pet.name)
-                        .font(PawRoutineTheme.Font.title3(.semibold))
+                        .font(PawRoutineTheme.PRFont.title3(.semibold))
                 }
             }
             
@@ -115,14 +115,14 @@ struct InsightsView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(PawRoutineTheme.Font.caption(.bold))
+                        .font(PawRoutineTheme.PRFont.caption(.bold))
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         .frame(width: 30, height: 30)
                         .background(PawRoutineTheme.Colors.bgSecondary, in: Circle())
                 }
                 
                 Text(selectedMonth, format: .dateTime.year().month())
-                    .font(PawRoutineTheme.Font.bodyText(.semibold))
+                    .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                     .frame(width: 80)
                 
                 Button {
@@ -131,7 +131,7 @@ struct InsightsView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.right")
-                        .font(PawRoutineTheme.Font.caption(.bold))
+                        .font(PawRoutineTheme.PRFont.caption(.bold))
                         .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         .frame(width: 30, height: 30)
                         .background(PawRoutineTheme.Colors.bgSecondary, in: Circle())
