@@ -2,7 +2,7 @@
 //  CalendarMonthView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  日历热力图 - 设计稿还原
 //
 
 import SwiftUI
@@ -38,7 +38,7 @@ struct CalendarMonthView: View {
         }.count
     }
     
-    /// 获取月份的第一天是星期几
+    /// 获取月份的第一天是星期几 (1=Sun ... 7=Sat)
     private var firstWeekday: Int {
         calendar.component(.weekday, from: monthDays.first ?? Date())
     }
@@ -47,25 +47,36 @@ struct CalendarMonthView: View {
     private let weekdaySymbols = ["日", "一", "二", "三", "四", "五", "六"]
     
     var body: some View {
-        GlassCard {
-            VStack(spacing: 12) {
+        PRCard(padding: .init(top: 16, leading: 14, bottom: 16, trailing: 14)) {
+            VStack(spacing: PawRoutineTheme.Spacing.md) {
+                // 标题行：2025年7月 + 左右箭头
+                HStack {
+                    Text(selectedMonth, format: .dateTime.year().month())
+                        .font(PawRoutineTheme.Font.title3(.semibold))
+                    
+                    Spacer()
+                }
+                
                 // 星期标题行
                 HStack(spacing: 0) {
                     ForEach(0..<7, id: \.self) { index in
                         Text(weekdaySymbols[index])
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .font(PawRoutineTheme.Font.caption2(.semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                             .frame(maxWidth: .infinity)
                     }
                 }
                 
                 // 日历网格
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7),
+                    spacing: 4
+                ) {
                     // 前置空白占位
                     ForEach(0..<(firstWeekday - 1), id: \.self) { _ in
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.clear)
-                            .frame(height: 36)
+                            .frame(height: 32)
                     }
                     
                     // 当月日期
@@ -81,16 +92,20 @@ struct CalendarMonthView: View {
                 }
                 
                 // 图例
-                HStack(spacing: 16) {
-                    legendItem(color: PawRoutineTheme.Colors.walking.opacity(0.3), label: "少")
+                HStack(spacing: PawRoutineTheme.Spacing.lg) {
+                    legendItem(color: PawRoutineTheme.Colors.walking.opacity(0.25), label: "少")
                     legendItem(color: PawRoutineTheme.Colors.walking.opacity(0.5), label: "中")
                     legendItem(color: PawRoutineTheme.Colors.walking.opacity(0.8), label: "多")
                     
                     Spacer()
                     
-                    Text("本月 \(pet.dailyRecords.filter({ calendar.isDate($0.timestamp, equalTo: selectedMonth, toGranularity: .month) }).count) 条记录")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                    let monthCount = pet.dailyRecords.filter({
+                        calendar.isDate($0.timestamp, equalTo: selectedMonth, toGranularity: .month)
+                    }).count
+                    
+                    Text("本月 \(monthCount) 条记录")
+                        .font(PawRoutineTheme.Font.caption2())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                 }
             }
         }
@@ -101,9 +116,10 @@ struct CalendarMonthView: View {
             Circle()
                 .fill(color)
                 .frame(width: 8, height: 8)
+            
             Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(PawRoutineTheme.Font.micro())
+                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
         }
     }
 }
@@ -131,10 +147,10 @@ struct CalendarDayCell: View {
     var body: some View {
         VStack(spacing: 2) {
             Text("\(day)")
-                .font(.subheadline.weight(isToday ? .bold : .regular))
+                .font(PawRoutineTheme.Font.caption(isToday ? .bold : .regular))
                 .foregroundStyle(
                     isToday ? .white :
-                    isCurrentMonth ? .primary : Color(.gray.opacity(0.3))
+                    isCurrentMonth ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary
                 )
             
             if hasRecords {
@@ -147,7 +163,7 @@ struct CalendarDayCell: View {
                     .frame(width: 6, height: 6)
             }
         }
-        .frame(height: 36)
+        .frame(height: 32)
         .background(
             Group {
                 if isToday {
@@ -165,8 +181,10 @@ struct CalendarDayCell: View {
         @State var date = Date()
         
         var body: some View {
-            CalendarMonthView(pet: Pet(name: "测试"), selectedMonth: $date)
-                .padding()
+            ScrollView {
+                CalendarMonthView(pet: Pet(name: "测试"), selectedMonth: $date)
+                    .padding()
+            }
         }
     }
     

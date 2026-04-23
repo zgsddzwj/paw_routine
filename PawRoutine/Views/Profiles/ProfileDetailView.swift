@@ -2,7 +2,7 @@
 //  ProfileDetailView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  宠物档案详情 - 设计稿还原
 //
 
 import SwiftUI
@@ -22,12 +22,12 @@ struct ProfileDetailView: View {
     
     var body: some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 20) {
-                // MARK: - 基础信息卡片
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                // MARK: - 头部信息卡片
                 profileHeader
                 
                 // MARK: - 年龄与信息详情
-                infoCards
+                infoCardsSection
                 
                 // MARK: - 体重追踪
                 weightSection
@@ -38,17 +38,10 @@ struct ProfileDetailView: View {
                 // MARK: - 证件夹
                 documentsSection
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(
-            LinearGradient(
-                colors: [PawRoutineTheme.Colors.gradientTop, PawRoutineTheme.Colors.gradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
+        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
         .sheet(isPresented: $showEditSheet) {
             EditPetView(pet: pet)
         }
@@ -60,214 +53,208 @@ struct ProfileDetailView: View {
         }
     }
     
-    // MARK: - Profile Header
+    // MARK: - Profile Header (设计稿顶部大头像 + 信息)
     
     private var profileHeader: some View {
-        GlassCard {
-            HStack(spacing: 16) {
+        PRCard(padding: .init(top: 20, leading: 16, bottom: 16, trailing: 16)) {
+            HStack(spacing: PawRoutineTheme.Spacing.lg) {
                 // 头像
-                if let avatar = pet.avatarImage {
-                    avatar
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [PawRoutineTheme.Colors.primary, PawRoutineTheme.Colors.secondary],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 3
-                                )
-                        )
-                        .shadow(color: PawRoutineTheme.Colors.primary.opacity(0.2), radius: 10, y: 4)
-                } else {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [PawRoutineTheme.Colors.primary.opacity(0.15), PawRoutineTheme.Colors.secondary.opacity(0.15)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
-                        
-                        Image(systemName: pet.petType.icon)
-                            .font(.system(size: 32))
-                            .foregroundStyle(PawRoutineTheme.Colors.primary)
-                    }
-                }
+                PRPetAvatar(image: pet.avatarImage, size: 80, showBorder: true)
                 
                 // 基本信息
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(pet.name)
-                        .font(.title2.weight(.bold))
-                    
                     HStack(spacing: 8) {
+                        Text(pet.name)
+                            .font(PawRoutineTheme.Font.title1(.bold))
+                        
+                        Button { showEditSheet = true } label: {
+                            Image(systemName: "pencil")
+                                .font(.caption2)
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        }
+                    }
+                    
+                    HStack(spacing: 6) {
                         if !pet.breed.isEmpty {
-                            Label(pet.breed, systemImage: "tag.fill")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            PRTag(text: pet.breed, color: PawRoutineTheme.Colors.textSecondary)
                         }
                         
-                        Label(pet.petType.rawValue, systemImage: pet.petType.icon)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        PRTag(text: pet.petType.rawValue, color: PawRoutineTheme.Colors.primary.opacity(0.5))
                     }
                     
                     HStack(spacing: 12) {
-                        // 性别
-                        HStack(spacing: 4) {
-                            Image(systemName: pet.gender.icon)
-                                .font(.caption)
-                            Text(pet.gender.rawValue)
-                                .font(.caption)
-                        }
+                        Label(pet.gender.rawValue, systemImage: pet.gender.icon)
+                            .font(PawRoutineTheme.Font.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         
-                        // 绝育状态
-                        HStack(spacing: 4) {
-                            Image(systemName: pet.isNeutered ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(pet.isNeutered ? PawRoutineTheme.Colors.secondary : .orange)
-                            Text(pet.isNeutered ? "已绝育" : "未绝育")
-                                .font(.caption)
-                                .foregroundStyle(pet.isNeutered ? PawRoutineTheme.Colors.secondary : .orange)
-                        }
+                        Text("·")
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        
+                        Text(pet.isNeutered ? "已绝育" : "未绝育")
+                            .font(PawRoutineTheme.Font.caption())
+                            .foregroundStyle(pet.isNeutered ? PawRoutineTheme.Colors.secondary : PawRoutineTheme.Colors.accent)
                     }
-                    .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
                 
-                // 编辑按钮
-                Button { showEditSheet = true } label: {
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.6))
+                // 小狗插图区域（设计稿右侧）
+                if let avatar = pet.avatarImage {
+                    avatar
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                        .opacity(0.3)
+                } else {
+                    Image(systemName: pet.petType.icon)
+                        .font(.system(size: 40))
+                        .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.15))
                 }
             }
         }
     }
     
-    // MARK: - Info Cards (Age Calculator)
+    // MARK: - Info Cards Section (年龄 + 入驻天数 + 统计)
     
-    private var infoCards: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            // 年龄卡片
-            GlassCard(cornerRadius: 16, padding: 14) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("年龄", systemImage: "birthday.cake.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    
-                    if let ageString = pet.ageDisplayString {
-                        Text(ageString)
-                            .font(.title3.weight(.bold))
-                        
-                        if let humanAge = pet.humanAge {
-                            Text("≈ \(String(format: "%.1f", humanAge)) 岁人类年龄")
-                                .font(.caption2)
-                                .foregroundStyle(PawRoutineTheme.Colors.secondary)
-                        }
-                    } else {
-                        Text("未设置生日")
-                            .font(.subheadline)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            
-            // 入驻天数卡片
-            GlassCard(cornerRadius: 16, padding: 14) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("入驻天数", systemImage: "calendar.badge.clock")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    
-                    let days = Calendar.current.dateComponents([.day], from: pet.createdAt, to: Date()).day ?? 0
-                    Text("\(days) 天")
-                        .font(.title3.weight(.bold))
-                    
-                    Text("加入 PawRoutine")
-                        .font(.caption2)
-                        .foregroundStyle(PawRoutineTheme.Colors.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            
-            // 总记录数
-            GlassCard(cornerRadius: 16, padding: 14) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("总记录", systemImage: "list.bullet.clipboard.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    
-                    Text("\(pet.dailyRecords.count)")
-                        .font(.title3.weight(.bold))
-                    
-                    Text("条日常记录")
-                        .font(.caption2)
-                        .foregroundStyle(PawRoutineTheme.Colors.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            
-            // 医疗记录数
-            GlassCard(cornerRadius: 16, padding: 14) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("医疗", systemImage: "cross.case.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    
-                    Text("\(pet.medicalRecords.count)")
-                        .font(.title3.weight(.bold))
-                    
-                    Text("条医疗记录")
-                        .font(.caption2)
-                        .foregroundStyle(PawRoutineTheme.Colors.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-    
-    // MARK: - Weight Section
-    
-    private var weightSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 14) {
+    private var infoCardsSection: some View {
+        VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
+            // 年龄 + 生日 行
+            PRCard(padding: .init(top: 14, leading: 14, bottom: 14, trailing: 14)) {
                 HStack {
-                    Label("体重追踪", systemImage: "scalemass.fill")
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("年龄")
+                            .font(PawRoutineTheme.Font.caption(.medium))
+                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                        
+                        if let ageString = pet.ageDisplayString {
+                            Text(ageString)
+                                .font(PawRoutineTheme.Font.title2(.bold))
+                            
+                            if let humanAge = pet.humanAge {
+                                Text("≈ \(String(format: "%.1f", humanAge)) 岁（人类年龄）")
+                                    .font(PawRoutineTheme.Font.caption2())
+                                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                            }
+                        } else {
+                            Text("未设置生日")
+                                .font(PawRoutineTheme.Font.bodyText())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        }
+                    }
                     
                     Spacer()
                     
-                    if let latest = pet.weightRecords.sorted(by: { $0.timestamp > $1.timestamp }).first {
-                        Text("\(latest.weight, specifier: "%.1f") kg")
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(PawRoutineTheme.Colors.secondary)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("出生日期")
+                            .font(PawRoutineTheme.Font.caption(.medium))
+                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                        
+                        if let birthDate = pet.birthDate {
+                            Text(birthDate, format: .dateTime.year().month().day())
+                                .font(PawRoutineTheme.Font.bodyText(.semibold))
+                        } else {
+                            Text("-")
+                                .font(PawRoutineTheme.Font.bodyText())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        }
                     }
-                    
-                    Button { showAddWeight = true } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(PawRoutineTheme.Colors.primary)
+                }
+            }
+            
+            // 底部统计行：总记录 | 医疗 | 证件
+            HStack(spacing: PawRoutineTheme.Spacing.sm) {
+                statItem(title: "今日", value: "\(pet.todayRecords.count)", icon: "calendar", color: PawRoutineTheme.Colors.primary)
+                statItem(title: "档案", value: "\(pet.medicalRecords.count)", icon: "cross.case.fill", color: PawRoutineTheme.Colors.medication)
+                statItem(title: "证件", value: "\(pet.documents.count)", icon: "folder.fill", color: PawRoutineTheme.Colors.feeding)
+                statItem(title: "统计", value: "-", icon: "chart.bar.fill", color: PawRoutineTheme.Colors.walking)
+            }
+        }
+    }
+    
+    private func statItem(title: String, value: String, icon: String, color: Color) -> some View {
+        PRCard(padding: .init(top: 10, leading: 10, bottom: 10, trailing: 10)) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(color)
+                
+                Text(value)
+                    .font(PawRoutineTheme.Font.title3(.bold))
+                
+                Text(title)
+                    .font(PawRoutineTheme.Font.micro())
+                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
+    // MARK: - Weight Section (设计稿体重追踪)
+    
+    private var weightSection: some View {
+        PRCard {
+            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
+                // 标题栏
+                HStack {
+                    PRSectionHeader("体重追踪") { trailing in
+                        Button { showAddWeight = true } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(PawRoutineTheme.Colors.primary)
+                        }
                     }
                 }
                 
                 if pet.weightRecords.isEmpty {
                     Text("还没有体重记录，点击 + 添加")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(PawRoutineTheme.Font.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
                 } else {
-                    WeightChart(records: pet.weightRecords.sorted(by: { $0.timestamp < $1.timestamp }))
+                    // 最新体重 + 变化
+                    let sortedWeights = pet.weightRecords.sorted(by: { $0.timestamp < $1.timestamp })
+                    if let latest = sortedWeights.last,
+                       let previous = sortedWeights.dropLast().last {
+                        HStack(spacing: PawRoutineTheme.Spacing.sm) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("最新体重")
+                                    .font(PawRoutineTheme.Font.caption())
+                                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                                
+                                Text("\(latest.weight, specifier: "%.1f") kg")
+                                    .font(PawRoutineTheme.Font.title2(.bold))
+                            }
+                            
+                            Spacer()
+                            
+                            let diff = latest.weight - previous.weight
+                            let diffStr = String(format: "%.1f", abs(diff))
+                            HStack(spacing: 2) {
+                                Text(diff >= 0 ? "+" : "-")
+                                Text(diffStr)
+                                Text("kg ↗")
+                            }
+                            .font(PawRoutineTheme.Font.bodyText(.semibold))
+                            .foregroundStyle(diff >= 0 ? PawRoutineTheme.Colors.secondary : PawRoutineTheme.Colors.medication)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background((diff >= 0 ? PawRoutineTheme.Colors.secondary : PawRoutineTheme.Colors.medication).opacity(0.08), in: Capsule())
+                        }
+                    }
+                    
+                    // 图表
+                    WeightChart(records: sortedWeights)
                         .frame(height: 180)
+                        .padding(.top, PawRoutineTheme.Spacing.sm)
+                    
+                    // 历史列表
+                    Divider()
+                        .padding(.vertical, PawRoutineTheme.Spacing.xs)
+                    
+                    ForEach(sortedWeights.suffix(4).reversed()) { record in
+                        WeightHistoryRow(record: record)
+                    }
                 }
             }
         }
@@ -276,24 +263,22 @@ struct ProfileDetailView: View {
     // MARK: - Medical Records Section
     
     private var medicalSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 14) {
+        PRCard {
+            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
                 HStack {
-                    Label("医疗备忘录", systemImage: "cross.case.fill")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Button { showMedicalRecord = true } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(PawRoutineTheme.Colors.primary)
+                    PRSectionHeader("医疗记录") { trailing in
+                        Button { showMedicalRecord = true } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(PawRoutineTheme.Colors.primary)
+                        }
                     }
                 }
                 
                 if pet.medicalRecords.isEmpty {
                     Text("还没有医疗记录")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(PawRoutineTheme.Font.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                 } else {
@@ -308,43 +293,40 @@ struct ProfileDetailView: View {
     // MARK: - Documents Section
     
     private var documentsSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 14) {
+        PRCard {
+            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
                 HStack {
-                    Label("证件夹", systemImage: "folder.fill.badge.plus")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Text("\(pet.documents.count) 个文件")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    PRSectionHeader("证件夹") { trailing in
+                        Text("\(pet.documents.count) 个文件")
+                            .font(PawRoutineTheme.Font.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    }
                 }
                 
                 if pet.documents.isEmpty {
                     Text("还没有保存的证件照片")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(PawRoutineTheme.Font.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: PawRoutineTheme.Spacing.md) {
                         ForEach(pet.documents) { doc in
                             DocumentThumbnail(document: doc)
                         }
                     }
                 }
                 
-                // 添加文档按钮
+                // 添加按钮
                 Button {
                     showDocumentPicker = true
                 } label: {
                     Label("添加证件照片", systemImage: "camera.on.rectangle.fill")
-                        .font(.subheadline.weight(.medium))
+                        .font(PawRoutineTheme.Font.bodyText(.medium))
                         .foregroundStyle(PawRoutineTheme.Colors.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(PawRoutineTheme.Colors.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                        .background(PawRoutineTheme.Colors.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
                 }
             }
         }
@@ -365,11 +347,11 @@ struct WeightChart: View {
                 x: .value("日期", record.timestamp),
                 y: .value("体重", record.weight)
             )
-            .foregroundStyle(PawRoutineTheme.Colors.secondary)
+            .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.7))
             .annotation(position: .overlay) {
                 if records.count <= 7 {
                     Text(record.weight, format: .number.precision(.fractionLength(1)))
-                        .font(.caption2)
+                        .font(PawRoutineTheme.Font.caption2())
                 }
             }
         }
@@ -377,11 +359,37 @@ struct WeightChart: View {
             AxisMarks(position: .leading) { value in
                 AxisValueLabel(centered: true) {
                     Text("\(value.as(Double.self) ?? 0, specifier: "%.1f")")
-                        .font(.caption2)
+                        .font(PawRoutineTheme.Font.micro())
                 }
             }
         }
         .chartXAxis(.hidden)
+    }
+}
+
+// MARK: - Weight History Row
+
+struct WeightHistoryRow: View {
+    let record: WeightRecord
+    
+    var body: some View {
+        HStack {
+            Text(record.timestamp, format: .dateTime.month().day())
+                .font(PawRoutineTheme.Font.caption())
+                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                .frame(width: 50, alignment: .leading)
+            
+            Spacer()
+            
+            Text("\(record.weight, specifier: "%.1f") kg")
+                .font(PawRoutineTheme.Font.bodyText(.semibold))
+                .monospacedDigit()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+        }
+        .padding(.vertical, 6)
     }
 }
 
@@ -391,10 +399,10 @@ struct MedicalRecordRow: View {
     let record: MedicalRecord
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: PawRoutineTheme.Spacing.md) {
             ZStack {
                 Circle()
-                    .fill(colorFor(record.medicalType).opacity(0.15))
+                    .fill(colorFor(record.medicalType).opacity(0.10))
                     .frame(width: 36, height: 36)
                 
                 Image(systemName: record.medicalType.icon)
@@ -404,22 +412,26 @@ struct MedicalRecordRow: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.title)
-                    .font(.subheadline.weight(.medium))
+                    .font(PawRoutineTheme.Font.bodyText(.medium))
                 
                 HStack(spacing: 8) {
                     Text(record.date, style: .date)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(PawRoutineTheme.Font.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     
                     if let nextDue = record.nextDueDate {
                         Label("下次: \(nextDue, style: .date)", systemImage: "clock.arrow.circlepath")
-                            .font(.caption2)
-                            .foregroundStyle(record.isReminderSet ? PawRoutineTheme.Colors.accent : Color(.gray.opacity(0.4)))
+                            .font(PawRoutineTheme.Font.caption2())
+                            .foregroundStyle(record.isReminderSet ? PawRoutineTheme.Colors.secondary : Color(.gray.opacity(0.4)))
                     }
                 }
             }
             
             Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
         }
         .padding(.vertical, 4)
     }
@@ -448,21 +460,22 @@ struct DocumentThumbnail: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
             } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.gray.opacity(0.1))
+                RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
+                    .fill(PawRoutineTheme.Colors.bgSecondary)
                     .frame(height: 80)
                     .overlay(
                         Image(systemName: document.documentType.icon)
                             .font(.title2)
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     )
             }
             
             Text(document.title)
-                .font(.caption2)
+                .font(PawRoutineTheme.Font.caption2())
                 .lineLimit(1)
+                .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
         }
     }
 }
@@ -476,7 +489,7 @@ struct DocumentThumbnail: View {
     }
     
     let context = container.mainContext
-    let samplePet = Pet(name: "旺财", breed: "柯基", petType: .dog, gender: .male, isNeutered: true)
+    let samplePet = Pet(name: "Cookie", breed: "金毛寻回犬", petType: .dog, gender: .male, isNeutered: true)
     context.insert(samplePet)
     
     return ProfileDetailView(pet: samplePet)

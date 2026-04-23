@@ -2,7 +2,7 @@
 //  ProfilesView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  宠物档案列表 - 设计稿还原
 //
 
 import SwiftUI
@@ -19,7 +19,11 @@ struct ProfilesView: View {
         NavigationStack {
             Group {
                 if pets.isEmpty {
-                    emptyState
+                    PREmptyState(
+                        icon: "pawprint.circle.fill",
+                        title: "还没有宠物档案",
+                        subtitle: "点击右上角添加你的第一只宠物吧！"
+                    )
                 } else if let pet = selectedPet ?? pets.first {
                     ProfileDetailView(pet: pet)
                         .id(pet.id)
@@ -29,56 +33,16 @@ struct ProfilesView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAddPet = true
-                    } label: {
+                    Button { showAddPet = true } label: {
                         Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.primary)
                     }
                 }
             }
         }
         .sheet(isPresented: $showAddPet) {
             AddPetView()
-        }
-    }
-    
-    private var emptyState: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "pawprint.circle.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.3))
-            
-            Text("还没有宠物档案")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            
-            Text("点击右上角添加你的第一只宠物吧！")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-            
-            Button {
-                showAddPet = true
-            } label: {
-                Label("添加宠物", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [PawRoutineTheme.Colors.primary, PawRoutineTheme.Colors.secondary],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                    )
-            }
-            
-            Spacer()
         }
     }
 }

@@ -2,7 +2,7 @@
 //  AddWeightSheet.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  添加体重记录 - 设计稿还原
 //
 
 import SwiftUI

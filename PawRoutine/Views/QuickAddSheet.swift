@@ -2,7 +2,7 @@
 //  QuickAddSheet.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  快速记录面板 - 设计稿还原
 //
 
 import SwiftUI
@@ -26,7 +26,7 @@ struct QuickAddSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(spacing: PawRoutineTheme.Spacing.xl) {
                 // MARK: - 宠物选择器（多宠物时显示）
                 if pets.count > 1 {
                     petSelector
@@ -36,14 +36,20 @@ struct QuickAddSheet: View {
                 actionGrid
                 
                 Spacer()
+                
+                // 底部提示文字
+                Text("长按可修改时间或添加备注")
+                    .font(PawRoutineTheme.Font.caption())
+                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
+            .padding(.horizontal, PawRoutineTheme.Spacing.xxl)
+            .padding(.top, PawRoutineTheme.Spacing.md)
             .navigationTitle("快速记录")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("完成") { dismiss() }
+                        .font(PawRoutineTheme.Font.bodyText(.medium))
                 }
             }
         }
@@ -58,47 +64,44 @@ struct QuickAddSheet: View {
                 )
                 .presentationDetents([.height(320)])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(.ultraThinMaterial)
+                .presentationBackground(PawRoutineTheme.Colors.bgPrimary)
             }
         }
         .onAppear {
-            // 默认选中第一只宠物
             selectedPetIndex = min(selectedPetIndex, max(pets.count - 1, 0))
         }
     }
     
-    // MARK: - Pet Selector
+    // MARK: - Pet Selector (紧凑版)
     
     private var petSelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
                 ForEach(Array(pets.enumerated()), id: \.element.id) { index, pet in
                     Button {
-                        selectedPetIndex = index
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedPetIndex = index
+                        }
                     } label: {
-                        VStack(spacing: 4) {
-                            if let avatar = pet.avatarImage {
-                                avatar
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 44, height: 44)
-                                    .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(PawRoutineTheme.Colors.primary.opacity(0.2))
-                                    .frame(width: 44, height: 44)
-                                    .overlay(
-                                        Image(systemName: pet.petType.icon)
-                                            .foregroundStyle(PawRoutineTheme.Colors.primary)
-                                    )
-                            }
+                        HStack(spacing: 6) {
+                            PRPetAvatar(image: pet.avatarImage, size: 32)
                             
                             Text(pet.name)
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(selectedPetIndex == index ? .primary : .secondary)
+                                .font(PawRoutineTheme.Font.caption(selectedPetIndex == index ? .semibold : .regular))
+                                .foregroundStyle(selectedPetIndex == index ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary)
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.full)
+                                .fill(selectedPetIndex == index ? PawRoutineTheme.Colors.primary.opacity(0.08) : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.full)
+                                        .stroke(selectedPetIndex == index ? PawRoutineTheme.Colors.primary.opacity(0.3) : Color.clear, lineWidth: 1)
+                                )
+                        )
                     }
-                    .opacity(selectedPetIndex == index ? 1.0 : 0.6)
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -107,39 +110,37 @@ struct QuickAddSheet: View {
     // MARK: - Action Grid
     
     private var actionGrid: some View {
-        LazyVGrid(columns: columns, spacing: 20) {
+        LazyVGrid(columns: columns, spacing: PawRoutineTheme.Spacing.xl) {
             ForEach(RecordType.allCases) { type in
                 quickActionButton(for: type)
             }
         }
+        .padding(.vertical, PawRoutineTheme.Spacing.sm)
     }
     
     private func quickActionButton(for type: RecordType) -> some View {
         Button {
-            // 短按直接记录
             quickAddRecord(type: type)
         } label: {
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 // 图标圆圈
                 ZStack {
                     Circle()
-                        .fill(colorFor(type).opacity(0.15))
+                        .fill(colorFor(type).opacity(0.10))
                         .frame(width: 64, height: 64)
                     
                     Text(type.emoji)
                         .font(.system(size: 28))
                 }
-                .shadow(color: colorFor(type).opacity(0.2), radius: 8, y: 4)
+                .shadow(color: colorFor(type).opacity(0.15), radius: 6, y: 3)
                 
-                // 标签
                 Text(type.rawValue)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .font(PawRoutineTheme.Font.caption(.medium))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
             }
         }
         .buttonStyle(.plain)
         .onLongPressGesture(minimumDuration: 0.5) {
-            // 长按打开详细编辑器
             selectedType = type
             editingTime = Date()
             editingNote = ""
@@ -159,7 +160,6 @@ struct QuickAddSheet: View {
         }
     }
     
-    /// 快速添加记录（短按，使用当前时间）
     private func quickAddRecord(type: RecordType) {
         guard !pets.isEmpty else { return }
         
@@ -167,14 +167,12 @@ struct QuickAddSheet: View {
         record.pet = pets[selectedPetIndex]
         modelContext.insert(record)
         
-        // 触觉反馈
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         
         dismiss()
     }
     
-    /// 带详情的添加记录（长按后保存）
     private func saveRecord(type: RecordType) {
         guard !pets.isEmpty else { return }
         
@@ -202,32 +200,113 @@ struct RecordDetailEditor: View {
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section("时间") {
-                    DatePicker(
-                        "记录时间",
-                        selection: $selectedTime,
-                        displayedComponents: [.date, .hourAndMinute]
-                    )
-                    .datePickerStyle(.graphical)
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                // 类型图标 + 名称
+                HStack(spacing: PawRoutineTheme.Spacing.md) {
+                    Circle()
+                        .fill(colorFor(recordType).opacity(0.10))
+                        .frame(width: 44, height: 44)
+                        .overlay(Text(recordType.emoji).font(.title3))
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(recordType.rawValue)
+                            .font(PawRoutineTheme.Font.title3(.semibold))
+                        
+                        Text("遛狗")
+                            .font(PawRoutineTheme.Font.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    }
+                    
+                    Spacer()
+                    
+                    PRTag(text: "已提醒", color: PawRoutineTheme.Colors.secondary)
                 }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
                 
-                Section("备注") {
-                    TextField("添加备注（可选）", text: $note, axis: .vertical)
-                        .lineLimit(3...6)
+                Divider()
+                
+                // 时间选择
+                VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
+                    Text("时间")
+                        .font(PawRoutineTheme.Font.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    
+                    HStack {
+                        Text("今天")
+                            .font(PawRoutineTheme.Font.bodyText())
+                        
+                        Spacer()
+                        
+                        Text(selectedTime, format: .dateTime.hour().minute())
+                            .font(PawRoutineTheme.Font.bodyText(.medium))
+                            .foregroundStyle(PawRoutineTheme.Colors.primary)
+                    }
+                    .padding(.vertical, 12)
+                    .background(PawRoutineTheme.Colors.bgSecondary, in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
                 }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                
+                // 备注
+                VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
+                    Text("备注")
+                        .font(PawRoutineTheme.Font.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    
+                    TextField("今天状态很好，跑得很开心！", text: $note, axis: .vertical)
+                        .font(PawRoutineTheme.Font.bodyText())
+                        .lineLimit(2...4)
+                        .padding(12)
+                        .background(PawRoutineTheme.Colors.bgSecondary, in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
+                }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                
+                Spacer()
+                
+                // 保存按钮
+                Button(action: onSave) {
+                    Text("保存")
+                        .font(PawRoutineTheme.Font.bodyText(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    PawRoutineTheme.Colors.primary,
+                                    PawRoutineTheme.Colors.primary.opacity(0.8)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
+                        )
+                }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                .padding(.bottom, PawRoutineTheme.Spacing.md)
             }
             .navigationTitle("\(recordType.emoji) \(recordType.rawValue)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("取消", role: .cancel, action: onCancel)
+                        .font(PawRoutineTheme.Font.bodyText())
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("保存", action: onSave)
-                        .fontWeight(.bold)
+                    Button("完成", action: onSave)
+                        .font(PawRoutineTheme.Font.bodyText(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.primary)
                 }
             }
+        }
+    }
+    
+    private func colorFor(_ type: RecordType) -> Color {
+        switch type {
+        case .feeding: return PawRoutineTheme.Colors.feeding
+        case .water: return PawRoutineTheme.Colors.water
+        case .walking: return PawRoutineTheme.Colors.walking
+        case .medication: return PawRoutineTheme.Colors.medication
+        case .bathroom: return PawRoutineTheme.Colors.bathroom
         }
     }
 }

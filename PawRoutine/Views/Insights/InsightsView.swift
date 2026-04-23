@@ -2,7 +2,7 @@
 //  InsightsView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  统计与回顾 - 设计稿还原
 //
 
 import SwiftUI
@@ -24,44 +24,27 @@ struct InsightsView: View {
                 if let pet = selectedPet {
                     insightsContent(for: pet)
                 } else {
-                    emptyState
+                    PREmptyState(
+                        icon: "chart.bar.fill",
+                        title: "还没有数据可统计",
+                        subtitle: "添加宠物并记录日常活动后，这里会展示统计图表"
+                    )
                 }
             }
-            .navigationTitle("统计")
+            .navigationTitle("统计与回顾")
             .navigationBarTitleDisplayMode(.large)
         }
     }
     
     // MARK: - Empty State
     
-    private var emptyState: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "chart.bar.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.3))
-            
-            Text("还没有数据可统计")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            
-            Text("添加宠物并记录日常活动后，这里会展示统计图表")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-            
-            Spacer()
-        }
-    }
-    
     // MARK: - Main Content
     
     @ViewBuilder
     private func insightsContent(for pet: Pet) -> some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 20) {
-                // 宠物切换 + 月份选择
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                // 头部：宠物切换 + 月份选择
                 insightsHeader(pet: pet)
                 
                 // 日历视图
@@ -73,17 +56,10 @@ struct InsightsView: View {
                 // 月度汇总
                 MonthlySummaryView(pet: pet, month: selectedMonth)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(
-            LinearGradient(
-                colors: [PawRoutineTheme.Colors.gradientTop, PawRoutineTheme.Colors.gradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
+        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
     }
     
     // MARK: - Header (Pet Switcher + Month Picker)
@@ -95,32 +71,24 @@ struct InsightsView: View {
                 Menu {
                     ForEach(Array(pets.enumerated()), id: \.element.id) { index, p in
                         Button {
-                            selectedPetIndex = index
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedPetIndex = index
+                            }
                         } label: {
-                            Label(p.name, systemImage: selectedPetIndex == index ? "checkmark" : "")
+                            Label(pet.name, systemImage: selectedPetIndex == index ? "checkmark" : "")
                         }
                     }
                 } label: {
                     HStack(spacing: 6) {
-                        if let avatar = pet.avatarImage {
-                            avatar
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 28, height: 28)
-                                .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .fill(PawRoutineTheme.Colors.primary.opacity(0.15))
-                                .frame(width: 28, height: 28)
-                        }
+                        PRPetAvatar(image: pet.avatarImage, size: 28)
                         
                         Text(pet.name)
-                            .font(.subheadline.weight(.semibold))
+                            .font(PawRoutineTheme.Font.bodyText(.semibold))
                         
                         Image(systemName: "chevron.down")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
-                    .foregroundStyle(.primary)
                 }
             } else {
                 HStack(spacing: 8) {
@@ -133,7 +101,7 @@ struct InsightsView: View {
                     }
                     
                     Text(pet.name)
-                        .font(.headline)
+                        .font(PawRoutineTheme.Font.title3(.semibold))
                 }
             }
             
@@ -147,13 +115,14 @@ struct InsightsView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.caption.weight(.bold))
+                        .font(PawRoutineTheme.Font.caption(.bold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         .frame(width: 30, height: 30)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .background(PawRoutineTheme.Colors.bgSecondary, in: Circle())
                 }
                 
                 Text(selectedMonth, format: .dateTime.year().month())
-                    .font(.subheadline.weight(.semibold))
+                    .font(PawRoutineTheme.Font.bodyText(.semibold))
                     .frame(width: 80)
                 
                 Button {
@@ -162,13 +131,13 @@ struct InsightsView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
+                        .font(PawRoutineTheme.Font.caption(.bold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         .frame(width: 30, height: 30)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .background(PawRoutineTheme.Colors.bgSecondary, in: Circle())
                 }
             }
         }
-        .padding(.horizontal, 4)
     }
 }
 

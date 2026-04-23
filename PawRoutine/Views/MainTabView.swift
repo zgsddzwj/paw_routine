@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  主 Tab 视图 - 设计稿还原
 //
 
 import SwiftUI
@@ -11,7 +11,6 @@ import SwiftData
 struct MainTabView: View {
     @State private var selectedTab: TabItem = .today
     @State private var showQuickAdd = false
-    @State private var showSettings = false
     
     enum TabItem: String, CaseIterable {
         case today = "今日"
@@ -21,7 +20,7 @@ struct MainTabView: View {
         
         var icon: String {
             switch self {
-            case .today: return "sun.max.fill"
+            case .today: return "house.fill"
             case .profiles: return "pawprint.fill"
             case .insights: return "chart.bar.fill"
             case .settings: return "gearshape.fill"
@@ -30,66 +29,73 @@ struct MainTabView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottom) {
             // 主内容区
             TabView(selection: $selectedTab) {
                 TodayView()
                     .tag(TabItem.today)
-                    .tabItem {
-                        Label(TabItem.today.rawValue, systemImage: TabItem.today.icon)
-                    }
                 
                 ProfilesView()
                     .tag(TabItem.profiles)
-                    .tabItem {
-                        Label(TabItem.profiles.rawValue, systemImage: TabItem.profiles.icon)
-                    }
                 
                 InsightsView()
                     .tag(TabItem.insights)
-                    .tabItem {
-                        Label(TabItem.insights.rawValue, systemImage: TabItem.insights.icon)
-                    }
                 
                 SettingsView()
                     .tag(TabItem.settings)
-                    .tabItem {
-                        Label(TabItem.settings.rawValue, systemImage: TabItem.settings.icon)
-                    }
             }
+            .animation(.easeInOut(duration: 0.25), value: selectedTab)
             
-            // 浮动 "+" 按钮（独立于 TabBar）
-            Button {
-                showQuickAdd = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .bold))
-                    .frame(width: 60, height: 60)
-                    .foregroundStyle(.white)
-                    .background(
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [PawRoutineTheme.Colors.primary, PawRoutineTheme.Colors.secondary],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: PawRoutineTheme.Colors.primary.opacity(0.4), radius: 12, y: 6)
-                    )
+            // 自定义底部 Tab 栏
+            VStack(spacing: 0) {
+                Divider()
+                    .background(PawRoutineTheme.Colors.separator)
+                
+                HStack(spacing: 0) {
+                    ForEach(TabItem.allCases, id: \.self) { tab in
+                        tabButton(for: tab)
+                    }
+                }
+                .padding(.top, 6)
+                .padding(.bottom, 8)
+                .background(
+                    Color.white
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: -2)
+                        .ignoresSafeArea(edges: .bottom)
+                )
             }
-            .buttonStyle(PawRoutineTheme.FloatingButtonStyle())
-            .padding(.trailing, 24)
-            // 避开 TabBar 高度 + 安全区域
-            .padding(.bottom, 8)
         }
-        .ignoresSafeArea(.keyboard)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $showQuickAdd) {
             QuickAddSheet(isPresented: $showQuickAdd)
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(.ultraThinMaterial)
+                .presentationBackground(PawRoutineTheme.Colors.bgPrimary)
         }
+    }
+    
+    // MARK: - Tab Button
+    
+    private func tabButton(for tab: TabItem) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3)) {
+                selectedTab = tab
+            }
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(selectedTab == tab ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
+                    .symbolEffect(.bounce, value: selectedTab == tab)
+                
+                Text(tab.rawValue)
+                    .font(PawRoutineTheme.Font.micro(selectedTab == tab ? .semibold : .regular))
+                    .foregroundStyle(selectedTab == tab ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

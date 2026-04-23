@@ -2,7 +2,7 @@
 //  TodayView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  今日看板 - 设计稿还原
 //
 
 import SwiftUI
@@ -25,40 +25,24 @@ struct TodayView: View {
                 if let pet = selectedPet {
                     todayContent(for: pet)
                 } else {
-                    emptyStateView
+                    PREmptyState(
+                        icon: "pawprint.circle.fill",
+                        title: "还没有宠物档案",
+                        subtitle: "点击右上角添加你的第一只宠物吧！"
+                    )
                 }
             }
-            .navigationTitle("今日")
+            .navigationTitle("今日看板")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(destination: AddPetView()) {
-                        Image(systemName: "person.badge.plus")
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.primary)
                     }
                 }
             }
-        }
-    }
-    
-    // MARK: - Empty State
-    
-    private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "pawprint.circle.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.3))
-            
-            Text("还没有宠物档案")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            
-            Text("点击右上角添加你的第一只宠物吧！")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-            
-            Spacer()
         }
     }
     
@@ -67,216 +51,172 @@ struct TodayView: View {
     @ViewBuilder
     private func todayContent(for pet: Pet) -> some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 20) {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
                 // 宠物切换器
-                petSelector(currentPet: pet)
+                PetSelectorRow(
+                    pets: pets,
+                    selectedIndex: $selectedPetIndex,
+                    onAddTapped: { /* handled by toolbar */ }
+                )
                 
-                // 每日进度环
-                DailyRingsView(pet: pet)
-                    .padding(.horizontal, 16)
+                // 今日进度环
+                DailyProgressRings(pet: pet)
                 
-                // 时间轴
-                TimelineView(pet: pet)
-                    .padding(.horizontal, 16)
+                // 时间轴列表
+                TimelineSection(pet: pet)
             }
-            .padding(.vertical, 8)
+            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(
-            LinearGradient(
-                colors: [PawRoutineTheme.Colors.gradientTop, PawRoutineTheme.Colors.gradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
+        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
     }
+}
+
+// MARK: - Pet Selector Row (设计稿顶部宠物切换)
+
+struct PetSelectorRow: View {
+    let pets: [Pet]
+    @Binding var selectedIndex: Int
+    let onAddTapped: () -> Void
     
-    // MARK: - Pet Selector (Horizontal Scroll)
-    
-    private func petSelector(currentPet: Pet) -> some View {
+    var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 14) {
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
                 ForEach(Array(pets.enumerated()), id: \.element.id) { index, pet in
                     Button {
-                        selectedPetIndex = index
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedIndex = index
+                        }
                     } label: {
                         VStack(spacing: 6) {
-                            if let avatar = pet.avatarImage {
-                                avatar
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: selectedPetIndex == index ? 60 : 50,
-                                           height: selectedPetIndex == index ? 60 : 50)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle()
-                                            .stroke(selectedPetIndex == index ? PawRoutineTheme.Colors.primary : Color.clear,
-                                                    lineWidth: 3)
-                                    )
-                                    .shadow(color: selectedPetIndex == index ? PawRoutineTheme.Colors.primary.opacity(0.3) : .clear,
-                                            radius: 8, y: 4)
-                            } else {
-                                ZStack {
-                                    Circle()
-                                        .fill(selectedPetIndex == index ? PawRoutineTheme.Colors.primary.opacity(0.15) : Color.gray.opacity(0.1))
-                                        .frame(width: selectedPetIndex == index ? 60 : 50,
-                                               height: selectedPetIndex == index ? 60 : 50)
-                                    
-                                    Text(Image(systemName: pet.petType.icon))
-                                        .font(.system(size: selectedPetIndex == index ? 24 : 20))
-                                        .foregroundStyle(selectedPetIndex == index ? PawRoutineTheme.Colors.primary : .gray)
-                                }
-                            }
+                            PRPetAvatar(
+                                image: pet.avatarImage,
+                                size: 56,
+                                isSelected: index == selectedIndex,
+                                showBorder: true
+                            )
                             
                             Text(pet.name)
-                                .font(.caption2.weight(selectedPetIndex == index ? .semibold : .regular))
-                                .foregroundStyle(selectedPetIndex == index ? .primary : .secondary)
+                                .font(PawRoutineTheme.Font.caption2(index == selectedIndex ? .semibold : .regular))
+                                .foregroundStyle(index == selectedIndex ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary)
                         }
                     }
                     .buttonStyle(.plain)
                 }
+                
+                // 添加按钮
+                Button {
+                    onAddTapped()
+                } label: {
+                    VStack(spacing: 6) {
+                        Circle()
+                            .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6, 3]))
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
+                            .frame(width: 56, height: 56)
+                            .overlay(
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .light))
+                                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.6))
+                            )
+                        
+                        Text("添加")
+                            .font(PawRoutineTheme.Font.caption2())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    }
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
+            .padding(.vertical, PawRoutineTheme.Spacing.sm)
         }
-        .frame(height: 90)
     }
 }
 
-// MARK: - Daily Rings (Apple Watch Style)
+// MARK: - Daily Progress Rings (设计稿三圆环)
 
-struct DailyRingsView: View {
+struct DailyProgressRings: View {
     let pet: Pet
     
-    private var todayRecords: [DailyRecord] {
-        pet.todayRecords
-    }
+    private var todayRecords: [DailyRecord] { pet.todayRecords }
     
-    /// 计算每种记录类型的完成度
     private func progress(for type: RecordType) -> Double {
         let count = todayRecords.filter { $0.recordType == type }.count
         return min(Double(count) / Double(type.defaultDailyGoal), 1.0)
     }
     
+    private func count(for type: RecordType) -> Int {
+        todayRecords.filter { $0.recordType == type }.count
+    }
+    
     var body: some View {
-        GlassCard {
-            HStack(spacing: 20) {
-                // 三圆环
-                ZStack {
-                    // 遛狗环（外）
-                    RingProgress(
-                        progress: progress(for: .walking),
-                        color: PawRoutineTheme.Colors.walking,
-                        lineWidth: 10,
-                        radius: 55
-                    )
+        PRCard(padding: .init(top: 20, leading: 16, bottom: 16, trailing: 16)) {
+            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.lg) {
+                // 标题行 + 编辑按钮
+                HStack {
+                    PRSectionHeader("今日进度")
                     
-                    // 喂食环（中）
-                    RingProgress(
-                        progress: progress(for: .feeding),
-                        color: PawRoutineTheme.Colors.feeding,
-                        lineWidth: 10,
-                        radius: 42
-                    )
+                    Spacer()
                     
-                    // 排便环（内）
-                    RingProgress(
-                        progress: progress(for: .bathroom),
-                        color: PawRoutineTheme.Colors.bathroom,
-                        lineWidth: 10,
-                        radius: 29
-                    )
+                    Button("编辑") {
+                        // TODO: 编辑目标
+                    }
+                    .font(PawRoutineTheme.Font.caption(.medium))
+                    .foregroundStyle(PawRoutineTheme.Colors.primary)
                 }
-                .frame(width: 130, height: 130)
                 
-                // 图例说明
-                VStack(alignment: .leading, spacing: 10) {
-                    ringLegendItem(
-                        "遛狗",
-                        color: PawRoutineTheme.Colors.walking,
-                        current: todayRecords.filter { $0.recordType == .walking }.count,
-                        goal: RecordType.walking.defaultDailyGoal
-                    )
-                    ringLegendItem(
-                        "喂食",
+                // 三圆环
+                HStack(spacing: PawRoutineTheme.Spacing.xl) {
+                    PRProgressRing(
+                        progress: progress(for: .feeding),
+                        total: RecordType.feeding.defaultDailyGoal,
+                        current: count(for: .feeding),
                         color: PawRoutineTheme.Colors.feeding,
-                        current: todayRecords.filter { $0.recordType == .feeding }.count,
-                        goal: RecordType.feeding.defaultDailyGoal
+                        label: "喂食"
                     )
-                    ringLegendItem(
-                        "排便",
+                    
+                    PRProgressRing(
+                        progress: progress(for: .walking),
+                        total: RecordType.walking.defaultDailyGoal,
+                        current: count(for: .walking),
+                        color: PawRoutineTheme.Colors.walking,
+                        label: "遛狗"
+                    )
+                    
+                    PRProgressRing(
+                        progress: progress(for: .bathroom),
+                        total: RecordType.bathroom.defaultDailyGoal,
+                        current: count(for: .bathroom),
                         color: PawRoutineTheme.Colors.bathroom,
-                        current: todayRecords.filter { $0.recordType == .bathroom }.count,
-                        goal: RecordType.bathroom.defaultDailyGoal
+                        label: "排便"
                     )
                 }
-            }
-            .padding(.vertical, 4)
-        }
-    }
-    
-    private func ringLegendItem(_ title: String, color: Color, current: Int, goal: Int) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            
-            Text(title)
-                .font(.subheadline)
-                .frame(width: 40, alignment: .leading)
-            
-            Text("\(current)/\(goal)")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(current >= goal ? color : .secondary)
-        }
-    }
-}
-
-// MARK: - Single Ring Progress Component
-
-struct RingProgress: View {
-    let progress: Double
-    let color: Color
-    let lineWidth: CGFloat
-    let radius: CGFloat
-    
-    @State private var animatedProgress: Double = 0
-    
-    var body: some View {
-        ZStack {
-            // 背景轨道
-            Circle()
-                .stroke(color.opacity(0.15), lineWidth: lineWidth)
-            
-            // 进度弧线
-            Circle()
-                .trim(from: 0, to: animatedProgress)
-                .stroke(
-                    AngularGradient(
-                        colors: [color.opacity(0.6), color, color.opacity(0.6)],
-                        center: .center
-                    ),
-                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 1.0, dampingFraction: 0.8), value: animatedProgress)
-        }
-        .frame(width: radius * 2, height: radius * 2)
-        .onAppear {
-            withAnimation(.easeOut(duration: 1.2).delay(0.2)) {
-                animatedProgress = progress
-            }
-        }
-        .onChange(of: progress) { _, newValue in
-            withAnimation(.spring(response: 1.0, dampingFraction: 0.8)) {
-                animatedProgress = newValue
+                .frame(maxWidth: .infinity)
+                
+                // 完成度提示
+                HStack(spacing: 4) {
+                    Text("目前完成度")
+                        .font(PawRoutineTheme.Font.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    
+                    let totalGoal = RecordType.feeding.defaultDailyGoal + RecordType.walking.defaultDailyGoal + RecordType.bathroom.defaultDailyGoal
+                    let totalDone = count(for: .feeding) + count(for: .walking) + count(for: .bathroom)
+                    let pct = totalGoal > 0 ? Int(Double(totalDone) / Double(totalGoal) * 100) : 0
+                    
+                    Text("\(pct)%")
+                        .font(PawRoutineTheme.Font.caption(.semibold))
+                        .foregroundStyle(PawRoutineTheme.Colors.feeding)
+                    
+                    Image(systemName: "face.smiling")
+                        .font(.caption2)
+                        .foregroundStyle(PawRoutineTheme.Colors.feeding)
+                }
             }
         }
     }
 }
 
-// MARK: - Timeline View
+// MARK: - Timeline Section (设计稿时间轴)
 
-struct TimelineView: View {
+struct TimelineSection: View {
     let pet: Pet
     
     private var sortedRecords: [DailyRecord] {
@@ -284,123 +224,123 @@ struct TimelineView: View {
     }
     
     var body: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 16) {
-                // 标题行
-                HStack {
-                    Label("时间轴", systemImage: "clock.arrow.circlepath")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Text("\(sortedRecords.count) 条记录")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial, in: Capsule())
-                }
+        PRCard(padding: .zero) {
+            VStack(alignment: .leading, spacing: 0) {
+                // 标题
+                PRSectionHeader("今日时间轴")
+                    .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                    .padding(.top, PawRoutineTheme.Spacing.lg)
+                    .padding(.bottom, PawRoutineTheme.Spacing.md)
                 
                 if sortedRecords.isEmpty {
-                    emptyTimeline
+                    VStack(spacing: PawRoutineTheme.Spacing.md) {
+                        Image(systemName: "text.line.first.trailing.arrow.backward.normal")
+                            .font(.title2)
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
+                        
+                        Text("今天还没有记录")
+                            .font(PawRoutineTheme.Font.bodyText())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        
+                        Text("点击右下角 + 快速记录")
+                            .font(PawRoutineTheme.Font.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 36)
                 } else {
-                    timelineList
+                    ForEach(Array(sortedRecords.enumerated()), id: \.element.id) { index, record in
+                        TimelineItemRow(record: record, isLast: index == sortedRecords.count - 1)
+                    }
                 }
-            }
-        }
-    }
-    
-    private var emptyTimeline: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "text.line.first.trailing.arrow.backward.normal")
-                .font(.title2)
-                .foregroundStyle(.tertiary)
-            
-            Text("今天还没有记录")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            
-            Text("点击右下角 + 快速记录")
-                .font(.caption)
-                .foregroundStyle(.quaternary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 30)
-    }
-    
-    private var timelineList: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(sortedRecords.enumerated()), id: \.element.id) { index, record in
-                TimelineRow(record: record, isLast: index == sortedRecords.count - 1)
             }
         }
     }
 }
 
-// MARK: - Timeline Row
+// MARK: - Timeline Item Row
 
-struct TimelineRow: View {
+struct TimelineItemRow: View {
     let record: DailyRecord
     let isLast: Bool
     
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // 时间轴竖线和圆点
-            VStack(spacing: 0) {
-                Circle()
-                    .fill(colorFor(record.recordType))
-                    .frame(width: 12, height: 12)
-                    .overlay(
-                        Circle()
-                            .stroke(.white, lineWidth: 2)
-                    )
-                
-                if !isLast {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 2)
-                }
-            }
-            .padding(.top, 2)
-            
-            // 内容卡片
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(record.recordType.rawValue)
-                        .font(.subheadline.weight(.semibold))
-                    
-                    Text(record.timestamp, style: .time)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    Spacer()
-                    
-                    Text(record.recordType.emoji)
-                        .font(.title3)
-                }
-                
-                if let note = record.note, !note.isEmpty {
-                    Text(note)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .padding(.top, 2)
-                }
-            }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
-            .background(colorFor(record.recordType).opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        }
-        .padding(.bottom, isLast ? 0 : 12)
-    }
-    
-    private func colorFor(_ type: RecordType) -> Color {
-        switch type {
+    private var typeColor: Color {
+        switch record.recordType {
         case .feeding: return PawRoutineTheme.Colors.feeding
         case .water: return PawRoutineTheme.Colors.water
         case .walking: return PawRoutineTheme.Colors.walking
         case .medication: return PawRoutineTheme.Colors.medication
         case .bathroom: return PawRoutineTheme.Colors.bathroom
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: PawRoutineTheme.Spacing.md) {
+                // 左侧：时间 + 竖线
+                VStack(spacing: 0) {
+                    Text(record.timestamp, format: .dateTime.hour().minute())
+                        .font(PawRoutineTheme.Font.caption2(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                        .frame(width: 44, alignment: .trailing)
+                    
+                    if !isLast {
+                        Rectangle()
+                            .fill(PawRoutineTheme.Colors.separator)
+                            .frame(width: 1)
+                    }
+                }
+                .padding(.top, 3)
+                
+                // 右侧：内容卡片
+                HStack(alignment: .center, spacing: PawRoutineTheme.Spacing.sm) {
+                    // 类型图标圆圈
+                    Circle()
+                        .fill(typeColor.opacity(0.12))
+                        .overlay(
+                            Text(record.recordType.emoji)
+                                .font(.system(size: 14))
+                        )
+                        .frame(width: 32, height: 32)
+                    
+                    // 文字信息
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: PawRoutineTheme.Spacing.sm) {
+                            Text(record.recordType.rawValue)
+                                .font(PawRoutineTheme.Font.bodyText(.medium))
+                                .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                            
+                            if let note = record.note, !note.isEmpty {
+                                Text(note)
+                                    .font(PawRoutineTheme.Font.caption())
+                                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        
+                        Text("\(record.timestamp, format: .dateTime.hour().minute()) · \(record.timestamp.formatted(.dateTime.month().day()))")
+                            .font(PawRoutineTheme.Font.micro())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    }
+                    
+                    Spacer()
+                    
+                    // 右侧勾选标记
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(typeColor.opacity(0.5))
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, PawRoutineTheme.Spacing.md)
+                .background(typeColor.opacity(0.04), in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
+            }
+            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+            .padding(.vertical, PawRoutineTheme.Spacing.sm)
+            
+            if !isLast {
+                Divider()
+                    .padding(.leading, 76)
+            }
         }
     }
 }

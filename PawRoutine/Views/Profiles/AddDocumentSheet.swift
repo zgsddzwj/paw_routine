@@ -2,7 +2,7 @@
 //  AddDocumentSheet.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  添加证件 - 设计稿还原
 //
 
 import SwiftUI
@@ -22,9 +22,7 @@ struct AddDocumentSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("照片") {
-                    documentPhotoPicker
-                }
+                Section("照片") { documentPhotoPicker }
                 
                 Section("信息") {
                     TextField("标题（如：2024年疫苗本）", text: $title)
@@ -82,20 +80,20 @@ struct AddDocumentSheet: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
             } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(style: StrokeStyle(lineWidth: 2, dash: [8]))
-                    .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.3))
+                RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
+                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [8]))
+                    .foregroundStyle(PawRoutineTheme.Colors.border.opacity(0.6))
                     .frame(height: 200)
                     .overlay(
                         VStack(spacing: 10) {
                             Image(systemName: "photo.on.rectangle.angled")
                                 .font(.title)
-                                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.5))
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
                             Text("点击选择照片")
-                                .font(.subheadline)
-                                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.5))
+                                .font(PawRoutineTheme.Font.bodyText())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
                         }
                     )
             }

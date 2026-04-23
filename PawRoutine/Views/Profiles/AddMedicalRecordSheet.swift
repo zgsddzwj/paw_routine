@@ -2,7 +2,7 @@
 //  AddMedicalRecordSheet.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  添加医疗记录 - 设计稿还原
 //
 
 import SwiftUI
@@ -84,13 +84,8 @@ struct AddMedicalRecordSheet: View {
                         record.pet = pet
                         modelContext.insert(record)
                         
-                        // 如果设置了提醒，安排本地通知
                         if isReminderSet, let dueDate = nextDueDate {
-                            NotificationManager.shared.scheduleMedicalReminder(
-                                for: pet,
-                                title: title,
-                                date: dueDate
-                            )
+                            NotificationManager.shared.scheduleMedicalReminder(for: pet, title: title, date: dueDate)
                         }
                         
                         dismiss()

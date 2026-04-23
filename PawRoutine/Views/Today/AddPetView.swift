@@ -2,7 +2,7 @@
 //  AddPetView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  添加宠物 - 设计稿还原
 //
 
 import SwiftUI
@@ -28,9 +28,7 @@ struct AddPetView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("头像") {
-                    photoPicker
-                }
+                Section("头像") { photoPicker }
                 
                 Section("基本信息") {
                     TextField("宠物名字", text: $name)
@@ -78,11 +76,9 @@ struct AddPetView: View {
                     Button("取消", role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("保存") {
-                        savePet()
-                    }
-                    .fontWeight(.bold)
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("保存") { savePet() }
+                        .fontWeight(.bold)
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .onChange(of: selectedPhoto) { _, newItem in
@@ -109,16 +105,17 @@ struct AddPetView: View {
                     .clipShape(Circle())
             } else {
                 Circle()
-                    .fill(PawRoutineTheme.Colors.primary.opacity(0.15))
+                    .fill(PawRoutineTheme.Colors.bgSecondary)
                     .frame(width: 100, height: 100)
                     .overlay(
                         VStack(spacing: 6) {
                             Image(systemName: "camera.fill")
                                 .font(.title3)
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                             Text("选择照片")
-                                .font(.caption2)
+                                .font(PawRoutineTheme.Font.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
-                        .foregroundStyle(PawRoutineTheme.Colors.primary)
                     )
             }
             
@@ -174,14 +171,14 @@ struct AddPetView: View {
 
                     if let age = humanAge {
                         Text("≈ \(String(format: "%.1f", age)) 岁人类年龄")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(PawRoutineTheme.Font.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
                 }
             }
         }
         .padding(8)
-        .background(PawRoutineTheme.Colors.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+        .background(PawRoutineTheme.Colors.bgSecondary, in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.sm))
     }
     
     // MARK: - Save

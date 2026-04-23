@@ -2,7 +2,7 @@
 //  EditPetView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  编辑宠物 - 设计稿还原
 //
 
 import SwiftUI
@@ -19,9 +19,7 @@ struct EditPetView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("头像") {
-                    editPhotoPicker
-                }
+                Section("头像") { editPhotoPicker }
                 
                 Section("基本信息") {
                     TextField("宠物名字", text: $pet.name)
@@ -84,12 +82,12 @@ struct EditPetView: View {
                     .clipShape(Circle())
             } else {
                 Circle()
-                    .fill(PawRoutineTheme.Colors.primary.opacity(0.15))
+                    .fill(PawRoutineTheme.Colors.bgSecondary)
                     .frame(width: 100, height: 100)
                     .overlay(
                         Image(systemName: pet.petType.icon)
                             .font(.system(size: 32))
-                            .foregroundStyle(PawRoutineTheme.Colors.primary)
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     )
             }
             

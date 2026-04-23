@@ -2,7 +2,7 @@
 //  MonthlySummaryView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/22.
+//  月度汇总 - 设计稿还原
 //
 
 import SwiftUI
@@ -48,23 +48,25 @@ struct MonthlySummaryView: View {
     }
     
     var body: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 16) {
-                Label("月度汇总", systemImage: "sum")
-                    .font(.headline)
+        PRCard {
+            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
+                PRSectionHeader("月度汇总")
                 
-                // 活跃度环形进度
-                HStack(spacing: 20) {
+                // 活跃度环形进度 + 统计数字
+                HStack(spacing: PawRoutineTheme.Spacing.xl) {
                     ZStack {
                         Circle()
-                            .stroke(Color.gray.opacity(0.1), lineWidth: 10)
+                            .stroke(PawRoutineTheme.Colors.separator, lineWidth: 10)
                             .frame(width: 80, height: 80)
                         
                         Circle()
                             .trim(from: 0, to: activityRate)
                             .stroke(
                                 AngularGradient(
-                                    colors: [PawRoutineTheme.Colors.primary.opacity(0.6), PawRoutineTheme.Colors.secondary],
+                                    colors: [
+                                        PawRoutineTheme.Colors.primary.opacity(0.6),
+                                        PawRoutineTheme.Colors.secondary
+                                    ],
                                     center: .center
                                 ),
                                 style: StrokeStyle(lineWidth: 10, lineCap: .round)
@@ -74,10 +76,10 @@ struct MonthlySummaryView: View {
                         
                         VStack(spacing: 2) {
                             Text("\(Int(activityRate * 100))%")
-                                .font(.title3.weight(.bold))
+                                .font(PawRoutineTheme.Font.title3(.bold))
                             Text("活跃度")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .font(PawRoutineTheme.Font.micro())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
                     
@@ -105,16 +107,16 @@ struct MonthlySummaryView: View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(PawRoutineTheme.Colors.secondary.opacity(0.7))
+                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.5))
                 .frame(width: 16)
             
             Text(label)
-                .font(.subheadline)
+                .font(PawRoutineTheme.Font.bodyText())
             
             Spacer()
             
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(PawRoutineTheme.Font.bodyText(.semibold))
                 .monospacedDigit()
         }
     }
@@ -122,7 +124,7 @@ struct MonthlySummaryView: View {
     private func achievementBadge(text: String) -> some View {
         HStack(spacing: 6) {
             Text(text)
-                .font(.subheadline.weight(.medium))
+                .font(PawRoutineTheme.Font.bodyText(.medium))
             Spacer()
         }
         .padding(12)
@@ -130,12 +132,12 @@ struct MonthlySummaryView: View {
             LinearGradient(
                 colors: [
                     PawRoutineTheme.Colors.accent.opacity(0.08),
-                    PawRoutineTheme.Colors.accent.opacity(0.04)
+                    PawRoutineTheme.Colors.accent.opacity(0.03)
                 ],
                 startPoint: .leading,
                 endPoint: .trailing
             ),
-            in: RoundedRectangle(cornerRadius: 12)
+            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
         )
     }
 }
