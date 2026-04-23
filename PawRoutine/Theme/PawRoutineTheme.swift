@@ -99,7 +99,8 @@ struct PawRoutineTheme {
 
 struct PRCard<Content: View>: View {
     var cornerRadius: CGFloat = PawRoutineTheme.Radius.lg
-    var padding: CGFloat = PawRoutineTheme.Spacing.lg
+    var paddingValue: CGFloat? = nil
+    var paddingEdges: EdgeInsets? = nil
     var bgColor: Color = PawRoutineTheme.Colors.bgCard
     @ViewBuilder let content: Content
     
@@ -110,14 +111,33 @@ struct PRCard<Content: View>: View {
         @ViewBuilder content: () -> Content
     ) {
         self.cornerRadius = cornerRadius
-        self.padding = padding
+        self.paddingValue = padding
+        self.paddingEdges = nil
+        self.bgColor = bgColor
+        self.content = content()
+    }
+    
+    init(
+        cornerRadius: CGFloat = PawRoutineTheme.Radius.lg,
+        padding edges: EdgeInsets,
+        bgColor: Color = PawRoutineTheme.Colors.bgCard,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.cornerRadius = cornerRadius
+        self.paddingValue = nil
+        self.paddingEdges = edges
         self.bgColor = bgColor
         self.content = content()
     }
     
     var body: some View {
         content
-            .padding(padding)
+            .padding(paddingEdges ?? EdgeInsets(
+                top: paddingValue ?? PawRoutineTheme.Spacing.lg,
+                leading: paddingValue ?? PawRoutineTheme.Spacing.lg,
+                bottom: paddingValue ?? PawRoutineTheme.Spacing.lg,
+                trailing: paddingValue ?? PawRoutineTheme.Spacing.lg
+            ))
             .background(bgColor)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
