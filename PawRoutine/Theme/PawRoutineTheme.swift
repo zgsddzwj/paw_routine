@@ -2,7 +2,7 @@
 //  PawRoutineTheme.swift
 //  PawRoutine
 //
-//  设计稿还原 - 全新设计系统
+//  设计稿还原 - iOS 26 Liquid Glass 设计系统
 //
 
 import SwiftUI
@@ -15,17 +15,17 @@ struct PawRoutineTheme {
     
     struct Colors {
         // 主色调
-        static let primary = Color(red: 0.40, green: 0.55, blue: 0.95)       // 活力蓝
+        static let primary = Color(red: 0.40, green: 0.55, blue: 0.95)
         static let primaryLight = Color(red: 0.65, green: 0.75, blue: 1.0)
-        static let secondary = Color(red: 0.35, green: 0.78, blue: 0.58)     // 薄荷绿
-        static let accent = Color(red: 1.00, green: 0.58, blue: 0.00)        // 活力橙
+        static let secondary = Color(red: 0.35, green: 0.78, blue: 0.58)
+        static let accent = Color(red: 1.00, green: 0.58, blue: 0.00)
         
-        // 功能色（匹配设计稿）
-        static let feeding = Color(red: 1.00, green: 0.58, blue: 0.00)      // 橙色 - 喂食
-        static let water = Color(red: 0.33, green: 0.62, blue: 0.94)         // 蓝色 - 换水
-        static let walking = Color(red: 0.35, green: 0.78, blue: 0.58)       // 绿色 - 遛狗
-        static let medication = Color(red: 0.96, green: 0.42, blue: 0.38)    // 红色 - 喂药
-        static let bathroom = Color(red: 0.60, green: 0.50, blue: 0.35)      // 棕色 - 排便
+        // 功能色
+        static let feeding = Color(red: 1.00, green: 0.58, blue: 0.00)
+        static let water = Color(red: 0.33, green: 0.62, blue: 0.94)
+        static let walking = Color(red: 0.35, green: 0.78, blue: 0.58)
+        static let medication = Color(red: 0.96, green: 0.42, blue: 0.38)
+        static let bathroom = Color(red: 0.60, green: 0.50, blue: 0.35)
         
         // 文字色
         static let textPrimary = Color(red: 0.12, green: 0.12, blue: 0.14)
@@ -95,7 +95,7 @@ struct PawRoutineTheme {
     }
 }
 
-// MARK: - Card Component (设计稿风格卡片)
+// MARK: - Card Component
 
 struct PRCard<Content: View>: View {
     var cornerRadius: CGFloat = PawRoutineTheme.Radius.lg
@@ -131,13 +131,14 @@ struct PRCard<Content: View>: View {
     }
     
     var body: some View {
-        content
-            .padding(paddingEdges ?? EdgeInsets(
-                top: paddingValue ?? PawRoutineTheme.Spacing.lg,
-                leading: paddingValue ?? PawRoutineTheme.Spacing.lg,
-                bottom: paddingValue ?? PawRoutineTheme.Spacing.lg,
-                trailing: paddingValue ?? PawRoutineTheme.Spacing.lg
-            ))
+        let edges = paddingEdges ?? EdgeInsets(
+            top: paddingValue ?? PawRoutineTheme.Spacing.lg,
+            leading: paddingValue ?? PawRoutineTheme.Spacing.lg,
+            bottom: paddingValue ?? PawRoutineTheme.Spacing.lg,
+            trailing: paddingValue ?? PawRoutineTheme.Spacing.lg
+        )
+        return content
+            .padding(edges)
             .background(bgColor)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
@@ -175,7 +176,7 @@ struct PRSectionHeader: View {
     }
 }
 
-// MARK: - Progress Ring (设计稿三环)
+// MARK: - Progress Ring
 
 struct PRProgressRing: View {
     let progress: Double
@@ -190,11 +191,9 @@ struct PRProgressRing: View {
     
     var body: some View {
         ZStack {
-            // 背景环
             Circle()
                 .stroke(color.opacity(0.12), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
             
-            // 进度环
             Circle()
                 .trim(from: 0, to: animatedProgress)
                 .stroke(
@@ -207,7 +206,6 @@ struct PRProgressRing: View {
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(response: 1.0, dampingFraction: 0.8), value: animatedProgress)
             
-            // 中间文字
             VStack(spacing: 2) {
                 Text("\(current)/\(total)")
                     .font(PawRoutineTheme.PRFont.caption2(.bold))
@@ -232,7 +230,7 @@ struct PRProgressRing: View {
     }
 }
 
-// MARK: - Pet Avatar (圆形头像 + 在线状态点)
+// MARK: - Pet Avatar
 
 struct PRPetAvatar: View {
     let image: Image?
@@ -247,7 +245,6 @@ struct PRPetAvatar: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } else {
-                // 默认占位
                 RoundedRectangle(cornerRadius: size / 2)
                     .fill(
                         LinearGradient(
@@ -270,7 +267,7 @@ struct PRPetAvatar: View {
         .clipShape(Circle())
         .overlay(
             Circle()
-                .stroke(isSelected ? PawRoutineTheme.Colors.primary : Color.clear,
+                .stroke(isSelected ? PawRoutineTheme.Colors.secondary : Color.clear,
                        lineWidth: showBorder ? 2.5 : 0)
         )
         .overlay(alignment: .bottomTrailing) {

@@ -2,104 +2,108 @@
 //  MainTabView.swift
 //  PawRoutine
 //
-//  主 Tab 视图 - 设计稿还原
+//  Created by Adward on 2026/4/24.
 //
 
 import SwiftUI
 import SwiftData
 
 struct MainTabView: View {
-    @State private var selectedTab: TabItem = .today
-    @State private var showQuickAdd = false
+    @Environment(\.modelContext) private var modelContext
+    @Query private var pets: [Pet]
+    @EnvironmentObject var petStore: PetStore
+    @State private var selectedTab = 0
+    @State private var showWelcome = false
     
-    enum TabItem: String, CaseIterable {
-        case today = "今日"
-        case profiles = "档案"
-        case insights = "统计"
-        case settings = "设置"
-        
-        var icon: String {
-            switch self {
-            case .today: return "house.fill"
-            case .profiles: return "pawprint.fill"
-            case .insights: return "chart.bar.fill"
-            case .settings: return "gearshape.fill"
-            }
-        }
-    }
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // 主内容区
+        ZStack {
+            // Background gradient for liquid glass effect
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(.systemBackground),
+                    Color(.systemBackground).opacity(0.8)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
             TabView(selection: $selectedTab) {
                 TodayView()
-                    .tag(TabItem.today)
+                    .tabItem {
+                        Image(systemName: "sun.max.fill")
+                        Text("今日")
+                    }
+                    .tag(0)
                 
                 ProfilesView()
-                    .tag(TabItem.profiles)
+                    .tabItem {
+                        Image(systemName: "pawprint.fill")
+                        Text("档案")
+                    }
+                    .tag(1)
                 
                 InsightsView()
-                    .tag(TabItem.insights)
+                    .tabItem {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                        Text("统计")
+                    }
+                    .tag(2)
                 
                 SettingsView()
-                    .tag(TabItem.settings)
-            }
-            .animation(.easeInOut(duration: 0.25), value: selectedTab)
-            
-            // 自定义底部 Tab 栏
-            VStack(spacing: 0) {
-                Divider()
-                    .background(PawRoutineTheme.Colors.separator)
-                
-                HStack(spacing: 0) {
-                    ForEach(TabItem.allCases, id: \.self) { tab in
-                        tabButton(for: tab)
+                    .tabItem {
+                        Image(systemName: "gearshape.fill")
+                        Text("设置")
                     }
+                    .tag(3)
+            }
+            .accentColor(.blue)
+            
+            // Floating Quick Add Button
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        petStore.showingQuickAdd = true
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(width: 56, height: 56)
+                            .background(
+                                Circle()
+                                    .fill(.blue)
+                                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                            )
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 90) // Above tab bar
                 }
-                .padding(.top, 6)
-                .padding(.bottom, 8)
-                .background(
-                    Color.white
-                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: -2)
-                        .ignoresSafeArea(edges: .bottom)
-                )
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .sheet(isPresented: $showQuickAdd) {
-            QuickAddSheet(isPresented: $showQuickAdd)
+        .sheet(isPresented: $petStore.showingQuickAdd) {
+            QuickAddView()
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(PawRoutineTheme.Colors.bgPrimary)
+        }
+        .fullScreenCover(isPresented: $showWelcome) {
+            WelcomeView(showWelcome: $showWelcome)
+        }
+        .onAppear {
+            // Select first pet if available
+            if petStore.selectedPet == nil && !pets.isEmpty {
+                petStore.selectedPet = pets.first
+            }
+            
+            // Show welcome if first time
+            if !hasSeenWelcome {
+                showWelcome = true
+                hasSeenWelcome = true
+            }
         }
     }
-    
-    // MARK: - Tab Button
-    
-    private func tabButton(for tab: TabItem) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.3)) {
-                selectedTab = tab
-            }
-        } label: {
-            VStack(spacing: 3) {
-                Image(systemName: tab.icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(selectedTab == tab ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
-                    .symbolEffect(.bounce, value: selectedTab == tab)
-                
-                Text(tab.rawValue)
-                    .font(PawRoutineTheme.PRFont.micro(selectedTab == tab ? .semibold : .regular))
-                    .foregroundStyle(selectedTab == tab ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
-            }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-#Preview {
-    MainTabView()
-        .modelContainer(for: Pet.self, inMemory: true)
 }

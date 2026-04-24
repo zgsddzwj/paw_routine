@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		C9F611A32F99083300CA21C9 /* PawRoutine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PawRoutine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9F6129F2F9B92A400CA21C9 /* PawRoutine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PawRoutine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C9F611A52F99083300CA21C9 /* PawRoutine */ = {
+		C9F612A12F9B92A400CA21C9 /* PawRoutine */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = PawRoutine;
 			sourceTree = "<group>";
@@ -19,7 +19,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		C9F611A02F99083300CA21C9 /* Frameworks */ = {
+		C9F6129C2F9B92A400CA21C9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,18 +29,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C9F6119A2F99083300CA21C9 = {
+		C9F612962F9B92A400CA21C9 = {
 			isa = PBXGroup;
 			children = (
-				C9F611A52F99083300CA21C9 /* PawRoutine */,
-				C9F611A42F99083300CA21C9 /* Products */,
+				C9F612A12F9B92A400CA21C9 /* PawRoutine */,
+				C9F612A02F9B92A400CA21C9 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		C9F611A42F99083300CA21C9 /* Products */ = {
+		C9F612A02F9B92A400CA21C9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C9F611A32F99083300CA21C9 /* PawRoutine.app */,
+				C9F6129F2F9B92A400CA21C9 /* PawRoutine.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,64 +48,64 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		C9F611A22F99083300CA21C9 /* PawRoutine */ = {
+		C9F6129E2F9B92A400CA21C9 /* PawRoutine */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C9F611B02F99083500CA21C9 /* Build configuration list for PBXNativeTarget "PawRoutine" */;
+			buildConfigurationList = C9F612AC2F9B92A600CA21C9 /* Build configuration list for PBXNativeTarget "PawRoutine" */;
 			buildPhases = (
-				C9F6119F2F99083300CA21C9 /* Sources */,
-				C9F611A02F99083300CA21C9 /* Frameworks */,
-				C9F611A12F99083300CA21C9 /* Resources */,
+				C9F6129B2F9B92A400CA21C9 /* Sources */,
+				C9F6129C2F9B92A400CA21C9 /* Frameworks */,
+				C9F6129D2F9B92A400CA21C9 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C9F611A52F99083300CA21C9 /* PawRoutine */,
+				C9F612A12F9B92A400CA21C9 /* PawRoutine */,
 			);
 			name = PawRoutine;
 			packageProductDependencies = (
 			);
 			productName = PawRoutine;
-			productReference = C9F611A32F99083300CA21C9 /* PawRoutine.app */;
+			productReference = C9F6129F2F9B92A400CA21C9 /* PawRoutine.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		C9F6119B2F99083300CA21C9 /* Project object */ = {
+		C9F612972F9B92A400CA21C9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
-					C9F611A22F99083300CA21C9 = {
+					C9F6129E2F9B92A400CA21C9 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
-			buildConfigurationList = C9F6119E2F99083300CA21C9 /* Build configuration list for PBXProject "PawRoutine" */;
+			buildConfigurationList = C9F6129A2F9B92A400CA21C9 /* Build configuration list for PBXProject "PawRoutine" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = C9F6119A2F99083300CA21C9;
+			mainGroup = C9F612962F9B92A400CA21C9;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = C9F611A42F99083300CA21C9 /* Products */;
+			productRefGroup = C9F612A02F9B92A400CA21C9 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C9F611A22F99083300CA21C9 /* PawRoutine */,
+				C9F6129E2F9B92A400CA21C9 /* PawRoutine */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C9F611A12F99083300CA21C9 /* Resources */ = {
+		C9F6129D2F9B92A400CA21C9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +115,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		C9F6119F2F99083300CA21C9 /* Sources */ = {
+		C9F6129B2F9B92A400CA21C9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -125,7 +125,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		C9F611AE2F99083500CA21C9 /* Debug */ = {
+		C9F612AA2F9B92A600CA21C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -188,7 +188,7 @@
 			};
 			name = Debug;
 		};
-		C9F611AF2F99083500CA21C9 /* Release */ = {
+		C9F612AB2F9B92A600CA21C9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -244,15 +244,13 @@
 			};
 			name = Release;
 		};
-		C9F611B12F99083500CA21C9 /* Debug */ = {
+		C9F612AD2F9B92A600CA21C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = PawRoutine/PawRoutine.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7LZNCTN8T3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -277,15 +275,13 @@
 			};
 			name = Debug;
 		};
-		C9F611B22F99083500CA21C9 /* Release */ = {
+		C9F612AE2F9B92A600CA21C9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = PawRoutine/PawRoutine.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7LZNCTN8T3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -313,25 +309,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C9F6119E2F99083300CA21C9 /* Build configuration list for PBXProject "PawRoutine" */ = {
+		C9F6129A2F9B92A400CA21C9 /* Build configuration list for PBXProject "PawRoutine" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C9F611AE2F99083500CA21C9 /* Debug */,
-				C9F611AF2F99083500CA21C9 /* Release */,
+				C9F612AA2F9B92A600CA21C9 /* Debug */,
+				C9F612AB2F9B92A600CA21C9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C9F611B02F99083500CA21C9 /* Build configuration list for PBXNativeTarget "PawRoutine" */ = {
+		C9F612AC2F9B92A600CA21C9 /* Build configuration list for PBXNativeTarget "PawRoutine" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C9F611B12F99083500CA21C9 /* Debug */,
-				C9F611B22F99083500CA21C9 /* Release */,
+				C9F612AD2F9B92A600CA21C9 /* Debug */,
+				C9F612AE2F9B92A600CA21C9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = C9F6119B2F99083300CA21C9 /* Project object */;
+	rootObject = C9F612972F9B92A400CA21C9 /* Project object */;
 }

@@ -2,7 +2,7 @@
 //  MonthlySummaryView.swift
 //  PawRoutine
 //
-//  月度汇总 - 设计稿还原
+//  月度汇总 - 从 PawRoutine2 集成，适配当前 Activity 模型
 //
 
 import SwiftUI
@@ -14,8 +14,8 @@ struct MonthlySummaryView: View {
     private var calendar: Calendar { Calendar.current }
     
     /// 当月记录
-    private var monthRecords: [DailyRecord] {
-        pet.dailyRecords.filter { record in
+    private var monthRecords: [Activity] {
+        pet.activities.filter { record in
             calendar.isDate(record.timestamp, equalTo: month, toGranularity: .month)
         }
     }
@@ -25,11 +25,11 @@ struct MonthlySummaryView: View {
     private var totalRecords: Int { monthRecords.count }
     
     private var feedingCount: Int {
-        monthRecords.filter { $0.recordType == .feeding }.count
+        monthRecords.filter { $0.type == .feeding }.count
     }
     
     private var walkingCount: Int {
-        monthRecords.filter { $0.recordType == .walking }.count
+        monthRecords.filter { $0.type == .walking }.count
     }
     
     private var activeDays: Int {
@@ -44,7 +44,10 @@ struct MonthlySummaryView: View {
     /// 活跃率
     private var activityRate: Double {
         guard daysInMonth > 0 else { return 0 }
-        return min(Double(activeDays) / Double(min(daysInMonth, calendar.component(.day, from: Date()))), 1.0)
+        let today = Date()
+        let isCurrentMonth = calendar.isDate(month, equalTo: today, toGranularity: .month)
+        let maxDays = isCurrentMonth ? calendar.component(.day, from: today) : daysInMonth
+        return min(Double(activeDays) / Double(maxDays), 1.0)
     }
     
     var body: some View {
@@ -140,17 +143,4 @@ struct MonthlySummaryView: View {
             in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
         )
     }
-}
-
-#Preview {
-    struct PreviewWrapper: View {
-        var body: some View {
-            ScrollView {
-                MonthlySummaryView(pet: Pet(name: "旺财"), month: Date())
-                    .padding()
-            }
-        }
-    }
-    
-    return PreviewWrapper()
 }

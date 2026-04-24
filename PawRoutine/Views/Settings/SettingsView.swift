@@ -2,465 +2,517 @@
 //  SettingsView.swift
 //  PawRoutine
 //
-//  设置页面 - 设计稿还原
+//  Created by Adward on 2026/4/24.
 //
 
 import SwiftUI
 import SwiftData
-import StoreKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var settings: [AppSettings]
+    @Query private var pets: [Pet]
     
-    @State private var appSetting: AppSettings?
+    @State private var showingExportSheet = false
+    @State private var showingProSheet = false
+    @State private var showingClearAlert = false
     
-    @State private var showExportSheet = false
-    @State private var showIAPSheet = false
-    @State private var exportURL: URL?
-    
-    // 提醒时间
-    @State private var morningFeedingTime = Date()
-    @State private var eveningFeedingTime = Date()
-    @State private var morningWalkTime = Date()
-    @State private var eveningWalkTime = Date()
-    
-    // 开关状态
-    @State private var feedingReminderOn = true
-    @State private var waterReminderOn = true
-    @State private var walkReminderOn = true
-    @State private var medicationReminderOn = true
+    private var currentSettings: AppSettings {
+        settings.first ?? {
+            let newSettings = AppSettings()
+            modelContext.insert(newSettings)
+            return newSettings
+        }()
+    }
     
     var body: some View {
-        NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: PawRoutineTheme.Spacing.lg) {
-                    // MARK: - Pro 会员卡片
-                    ProFeatureCard(isPro: appSetting?.isPro ?? false) {
-                        showIAPSheet = true
-                    }
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Profile Card
+                    SettingsProfileCard(settings: currentSettings)
                     
-                    // MARK: - 提醒配置
-                    PRCard {
-                        VStack(spacing: 0) {
-                            PRSectionHeader("提醒配置")
-                                .padding(.bottom, PawRoutineTheme.Spacing.md)
-                            
-                            reminderRow("喂食（早餐）", icon: "sunrise.fill", time: $morningFeedingTime, enabled: $feedingReminderOn, color: .orange)
-                            Divider().padding(.leading, 40)
-                            reminderRow("喂食（晚餐）", icon: "sunset.fill", time: $eveningFeedingTime, enabled: $feedingReminderOn, color: .orange)
-                            Divider().padding(.leading, 40)
-                            reminderRow("遛狗", icon: "figure.walk", time: $morningWalkTime, enabled: $walkReminderOn, color: .green)
-                            Divider().padding(.leading, 40)
-                            reminderRow("换水", icon: "drop.fill", time: $eveningWalkTime, enabled: $waterReminderOn, color: .blue)
+                    // Notification Settings Section
+                    SettingsSection(title: "提醒默认值", icon: "bell.fill") {
+                        SettingsRow(icon: "fork.knife", title: "喂食（早餐）", value: currentSettings.morningFeedingTime.formatted(date: .omitted, time: .shortened)) {
+                            // Tapped - could show picker
+                        }
+                        
+                        SettingsRow(icon: "fork.knife", title: "喂食（晚餐）", value: currentSettings.eveningFeedingTime.formatted(date: .omitted, time: .shortened)) {
+                            // Tapped
+                        }
+                        
+                        if let walkTime = currentSettings.walkingTimes.first {
+                            SettingsRow(icon: "figure.walk", title: "遛狗", value: walkTime.formatted(date: .omitted, time: .shortened)) {
+                                // Tapped
+                            }
+                        }
+                        
+                        SettingsRow(icon: "drop.fill", title: "换水", value: "09:00") {
+                            // Tapped
                         }
                     }
                     
-                    // MARK: - 健康提醒
-                    PRCard {
-                        VStack(spacing: 0) {
-                            PRSectionHeader("健康提醒")
-                                .padding(.bottom, PawRoutineTheme.Spacing.md)
-                            
-                            settingsRow(title: "体内驱虫", subtitle: "每 30 天", icon: "cross.case.fill", color: .red) {
-                                // TODO
-                            }
-                            Divider().padding(.leading, 44)
-                            settingsRow(title: "疫苗提醒", subtitle: "开启", icon: "syringe.fill", color: .green) {
-                                // TODO
-                            }
+                    // Health Reminders Section
+                    SettingsSection(title: "健康提醒", icon: "heart.text.square.fill") {
+                        SettingsRow(icon: "pills", title: "体内驱虫", value: "每 90 天") {
+                            // Tapped
+                        }
+                        
+                        SettingsRow(icon: "ladybug", title: "体外驱虫", value: "每 30 天") {
+                            // Tapped
+                        }
+                        
+                        SettingsRow(icon: "syringe", title: "疫苗提醒", value: currentSettings.medicationReminderEnabled ? "开启" : "关闭") {
+                            // Tapped
                         }
                     }
                     
-                    // MARK: - 数据与备份
-                    PRCard {
-                        VStack(spacing: 0) {
-                            PRSectionHeader("数据与备份")
-                                .padding(.bottom, PawRoutineTheme.Spacing.md)
-                            
-                            settingsRow(title: "iCloud 同步", subtitle: "已开启", icon: "cloud.fill", color: .blue) {
-                                // TODO
-                            }
-                            Divider().padding(.leading, 44)
-                            
-                            Button {
-                                exportCSV()
-                            } label: {
-                                settingsRowContent(
-                                    title: "数据导出",
-                                    subtitle: "(CSV)",
-                                    icon: "square.and.arrow.up",
-                                    color: .gray,
-                                    trailing: AnyView(Image(systemName: "chevron.right").font(.caption2).foregroundStyle(PawRoutineTheme.Colors.textTertiary))
-                                )
-                            }
-                            .buttonStyle(.plain)
+                    // Data Management Section
+                    SettingsSection(title: "数据与备份", icon: "square.and.arrow.up") {
+                        SettingsRow(icon: "icloud", title: "iCloud 同步", value: "已开启") {
+                            // Tapped
                         }
+                        
+                        Button(action: { showingExportSheet = true }) {
+                            SettingsRow(icon: "doc.text", title: "数据导出 (CSV)", value: nil) {}
+                                .foregroundColor(.primary)
+                        }
+                        .disabled(pets.isEmpty)
                     }
                     
-                    // MARK: - 关于
-                    PRCard {
-                        VStack(spacing: 0) {
-                            PRSectionHeader("关于")
-                                .padding(.bottom, PawRoutineTheme.Spacing.md)
-                            
-                            settingsRow(title: "帮助与反馈", subtitle: "", icon: "questionmark.circle.fill", color: .blue) {
-                                // TODO
-                            }
-                            Divider().padding(.leading, 44)
-                            settingsRow(title: "关于 PawRoutine", subtitle: "", icon: "info.circle.fill", color: .green) {
-                                // TODO
-                            }
+                    // About Section
+                    SettingsSection(title: "关于", icon: "info.circle.fill") {
+                        SettingsRow(icon: "questionmark.circle", title: "帮助与反馈", value: nil) {
+                            // Open help URL
+                        }
+                        
+                        SettingsRow(icon: "star.fill", title: "关于 PawRoutine", value: nil) {
+                            // Show about
                         }
                     }
-                    
-                    // 底部 Tab 栏占位
-                    HStack(spacing: 0) {
-                        bottomTabItem(icon: "house.fill", label: "今日", isSelected: false)
-                        bottomTabItem(icon: "pawprint.fill", label: "档案", isSelected: false)
-                        bottomTabItem(icon: "chart.bar.fill", label: "统计", isSelected: false)
-                        bottomTabItem(icon: "gearshape.fill", label: "设置", isSelected: true)
-                    }
-                    .padding(.vertical, 8)
-                    .background(PawRoutineTheme.Colors.bgCard)
-                    .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg))
                 }
-                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-                .padding(.bottom, PawRoutineTheme.Spacing.xxl)
+                .padding(.horizontal)
             }
-            .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
             .navigationTitle("设置")
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showExportSheet) {
-                if let url = exportURL {
-                    ShareSheet(items: [url])
-                }
+            .navigationBarTitleDisplayMode(.large)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        }
+        .sheet(isPresented: $showingExportSheet) {
+            DataExportView(pets: pets)
+        }
+        .sheet(isPresented: $showingProSheet) {
+            ProUpgradeView(settings: currentSettings)
+        }
+        .alert("清除所有数据", isPresented: $showingClearAlert) {
+            Button("取消", role: .cancel) {}
+            Button("确认删除", role: .destructive) {
+                clearAllData()
             }
-            .sheet(isPresented: $showIAPSheet) {
-                IAPView(appSetting: $appSetting)
-            }
-            .onAppear { loadSettings() }
+        } message: {
+            Text("此操作将删除所有宠物档案和相关记录，且无法恢复。")
         }
     }
     
-    // MARK: - Reminder Row
+    private func clearAllData() {
+        for pet in pets {
+            modelContext.delete(pet)
+        }
+    }
+}
+
+// MARK: - Profile Card
+struct SettingsProfileCard: View {
+    let settings: AppSettings
+    @Environment(\.modelContext) private var modelContext
     
-    private func reminderRow(_ title: String, icon: String, time: Binding<Date>, enabled: Binding<Bool>, color: Color) -> some View {
-        HStack(spacing: PawRoutineTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundStyle(color)
-                .frame(width: 24)
+    var body: some View {
+        HStack(spacing: 16) {
+            // App Icon
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.orange, .pink]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 56, height: 56)
+                
+                Image(systemName: "pawprint.fill")
+                    .font(.title2)
+                    .foregroundColor(.white)
+            }
             
-            Text(title)
-                .font(PawRoutineTheme.PRFont.bodyText())
+            // Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text("PawRoutine \(settings.isPro ? "Pro" : "")")
+                    .font(.headline)
+                
+                Text(settings.isPro ? "已解锁" : "免费版")
+                    .font(.subheadline)
+                    .foregroundColor(settings.isPro ? .green : .secondary)
+            }
             
             Spacer()
-            
-            Text(time.wrappedValue, format: .dateTime.hour().minute())
-                .font(PawRoutineTheme.PRFont.bodyText(.medium))
-                .monospacedDigit()
             
             Image(systemName: "chevron.right")
-                .font(.caption2)
-                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                .foregroundColor(.secondary)
+                .font(.caption)
         }
-        .padding(.vertical, 12)
-        .opacity(enabled.wrappedValue ? 1.0 : 0.5)
-    }
-    
-    // MARK: - Settings Row
-    
-    private func settingsRow(title: String, subtitle: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            settingsRowContent(
-                title: title,
-                subtitle: subtitle,
-                icon: icon,
-                color: color,
-                trailing: AnyView(Image(systemName: "chevron.right").font(.caption2).foregroundStyle(PawRoutineTheme.Colors.textTertiary))
-            )
-        }
-        .buttonStyle(.plain)
-    }
-    
-    private func settingsRowContent(title: String, subtitle: String, icon: String, color: Color, trailing: AnyView) -> some View {
-        HStack(spacing: PawRoutineTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundStyle(color)
-                .frame(width: 20)
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(PawRoutineTheme.PRFont.bodyText())
-                
-                if !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(PawRoutineTheme.PRFont.caption2())
-                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                }
-            }
-            
-            Spacer()
-            
-            trailing
-        }
-        .padding(.vertical, 12)
-    }
-    
-    // MARK: - Bottom Tab Item
-    
-    private func bottomTabItem(icon: String, label: String, isSelected: Bool) -> some View {
-        VStack(spacing: 3) {
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundStyle(isSelected ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
-            
-            Text(label)
-                .font(PawRoutineTheme.PRFont.micro(isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? PawRoutineTheme.Colors.primary : PawRoutineTheme.Colors.textTertiary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-    
-    // MARK: - Settings Loading
-    
-    private func loadSettings() {
-        if let existing = settings.first {
-            appSetting = existing
-            morningFeedingTime = existing.morningFeedingTime
-            eveningFeedingTime = existing.eveningFeedingTime
-            morningWalkTime = existing.morningWalkTime
-            eveningWalkTime = existing.eveningWalkTime
-            feedingReminderOn = existing.feedingReminderEnabled
-            waterReminderOn = existing.waterReminderEnabled
-            walkReminderOn = existing.walkReminderEnabled
-            medicationReminderOn = existing.medicationReminderEnabled
-        } else {
-            let newSetting = AppSettings()
-            modelContext.insert(newSetting)
-            appSetting = newSetting
-        }
-    }
-    
-    // MARK: - CSV Export
-    
-    private func exportCSV() {
-        guard let setting = appSetting else { return }
-        
-        var csvString = "日期,宠物,类型,备注\n"
-        
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent("pawroutine_export_\(Date().timeIntervalSince1970).csv")
-        
-        do {
-            try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
-            self.exportURL = fileURL
-            showExportSheet = true
-        } catch {
-            print("Export error: \(error)")
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .onTapGesture {
+            // Could navigate to profile
         }
     }
 }
 
-// MARK: - Pro Feature Card (设计稿顶部会员卡)
-
-struct ProFeatureCard: View {
-    let isPro: Bool
-    let onTap: () -> Void
+// MARK: - Reusable Settings Section
+struct SettingsSection<Content: View>: View {
+    let title: String
+    let icon: String
+    @ViewBuilder let content: Content
     
     var body: some View {
-        Button(action: onTap) {
-            PRCard(padding: .init(top: 18, leading: 16, bottom: 18, trailing: 16)) {
-                HStack(spacing: PawRoutineTheme.Spacing.lg) {
-                    // 左侧 Logo
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.orange.opacity(0.15), .yellow.opacity(0.08)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 52, height: 52)
-                        
-                        Image(systemName: isPro ? "crown.fill" : "pawprint.fill")
-                            .font(.title2)
-                            .foregroundStyle(isPro ? .yellow : PawRoutineTheme.Colors.primary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+            }
+            
+            VStack(spacing: 0) {
+                content
+            }
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+    }
+}
+
+// MARK: - Settings Row
+struct SettingsRow: View {
+    let icon: String
+    let title: String
+    let value: String?
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.body)
+                    .foregroundColor(.blue)
+                    .frame(width: 24)
+                
+                Text(title)
+                    .font(.body)
+                
+                Spacer()
+                
+                if let value {
+                    Text(value)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundColor(.secondary.opacity(0.5))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Data Export View (Full CSV Implementation)
+struct DataExportView: View {
+    let pets: [Pet]
+    @Environment(\.dismiss) private var dismiss
+    @State private var exportStatus = ""
+    @State private var isExporting = false
+    @State private var selectedPet: Pet?
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 60))
+                        .foregroundColor(.blue)
+                    
+                    Text("导出数据")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Text("将宠物记录导出为CSV文件，方便发送给兽医查看")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    // Pet Selection
+                    if pets.count > 1 {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("选择宠物")
+                                .font(.headline)
+                            
+                            Picker("选择宠物", selection: $selectedPet) {
+                                Text("全部宠物").tag(nil as Pet?)
+                                ForEach(pets) { pet in
+                                    Text(pet.name).tag(pet as Pet?)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
                     }
                     
-                    // 中间文字
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text("PawRoutine Pro")
-                                .font(PawRoutineTheme.PRFont.title3(.semibold))
-                            
-                            if isPro {
-                                PRTag(text: "已激活", color: .green)
+                    // Export Status
+                    if !exportStatus.isEmpty {
+                        Text(exportStatus)
+                            .font(.subheadline)
+                            .padding()
+                            .background(exportStatus.contains("成功") || exportStatus.contains("已保存") ? Color.green.opacity(0.1) : Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                            .foregroundColor(exportStatus.contains("成功") || exportStatus.contains("已保存") ? .green : .orange)
+                    }
+                    
+                    // Export Button
+                    Button(action: exportData) {
+                        HStack {
+                            if isExporting {
+                                ProgressView()
+                                    .tint(.white)
+                                Text("导出中...")
+                            } else {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("开始导出")
                             }
                         }
-                        
-                        Text("解锁全部功能，享受完整的养宠生活")
-                            .font(PawRoutineTheme.PRFont.caption())
-                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(isExporting ? Color.gray : Color.blue, in: RoundedRectangle(cornerRadius: 12))
                     }
+                    .disabled(isExporting || pets.isEmpty)
                     
                     Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                }
+                .padding()
+            }
+            .navigationTitle("数据导出")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完成") {
+                        dismiss()
+                    }
                 }
             }
         }
-        .buttonStyle(.plain)
+        .onAppear {
+            if pets.count == 1 {
+                selectedPet = pets.first
+            }
+        }
+    }
+    
+    private func exportData() {
+        isExporting = true
+        exportStatus = ""
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let petsToExport: [Pet]
+            if let selected = selectedPet {
+                petsToExport = [selected]
+            } else {
+                petsToExport = pets
+            }
+            
+            var csvString = "宠物,类型,活动/记录,时间,备注\n"
+            
+            for pet in petsToExport {
+                // Activities
+                for activity in pet.activities.sorted(by: { $0.timestamp < $1.timestamp }) {
+                    let dateStr = activity.timestamp.formatted(date: .numeric, time: .standard)
+                    let notes = activity.notes ?? ""
+                    csvString += "\(pet.name),活动,\(activity.type.rawValue),\(dateStr),\"\(notes)\"\n"
+                }
+                
+                // Medical Records
+                for record in pet.medicalRecords.sorted(by: { $0.date < $1.date }) {
+                    let dateStr = record.date.formatted(date: .numeric, time: .omitted)
+                    let nextDue = record.nextDueDate?.formatted(date: .numeric, time: .omitted) ?? ""
+                    let notes = record.notes ?? ""
+                    csvString += "\(pet.name),医疗,\(record.type.rawValue),\(dateStr),\"\(notes); 下次:\(nextDue)\"\n"
+                }
+                
+                // Weight Records
+                for weight in pet.weightRecords.sorted(by: { $0.date < $1.date }) {
+                    let dateStr = weight.date.formatted(date: .numeric, time: .omitted)
+                    let notes = weight.notes ?? ""
+                    csvString += "\(pet.name),体重,\(weight.weight) kg,\(dateStr),\"\(notes)\"\n"
+                }
+            }
+            
+            DispatchQueue.main.async {
+                saveCSVFile(csvContent: csvString)
+                isExporting = false
+            }
+        }
+    }
+    
+    private func saveCSVFile(csvContent: String) {
+        let fileName = "PawRoutine_Export_\(Date().formatted(date: .numeric, time: .omitted)).csv"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        
+        do {
+            try csvContent.write(to: tempURL, atomically: true, encoding: .utf8)
+            
+            let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: [])
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let rootVC = windowScene.windows.first?.rootViewController {
+                rootVC.present(activityVC, animated: true)
+                exportStatus = "已保存到文件App，请通过分享功能导出"
+            } else {
+                exportStatus = "文件已生成：\(fileName)"
+            }
+        } catch {
+            exportStatus = "导出失败：\(error.localizedDescription)"
+        }
     }
 }
 
-// MARK: - IAP View (设计稿 Pro 购买页)
-
-struct IAPView: View {
-    @Binding var appSetting: AppSettings?
+// MARK: - Pro Upgrade View (Matching Design)
+struct ProUpgradeView: View {
+    let settings: AppSettings
     @Environment(\.dismiss) private var dismiss
-    @State private var isLoading = false
-    @State private var purchaseSuccess = false
+    @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: PawRoutineTheme.Spacing.xxl) {
-                Spacer()
-                
-                // 标题区域
-                VStack(spacing: PawRoutineTheme.Spacing.md) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.yellow.opacity(0.15), .orange.opacity(0.08)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
-                        
-                        Image(systemName: "pawprint.fill")
-                            .font(.system(size: 36))
-                            .foregroundStyle(PawRoutineTheme.Colors.primary)
-                    }
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Spacer().frame(height: 20)
                     
-                    Text("PawRoutine Pro")
-                        .font(PawRoutineTheme.PRFont.largeTitle(.bold))
-                    
-                    Text("解锁全部功能，享受完整的养宠生活")
-                        .font(PawRoutineTheme.PRFont.bodyText())
-                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
-                }
-                
-                // 功能列表
-                PRCard(cornerRadius: PawRoutineTheme.Radius.xl, padding: .init(top: 20, leading: 16, bottom: 20, trailing: 16)) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        featureItem(icon: "checkmark.circle.fill", title: "无限宠物数量", isChecked: true)
-                        featureItem(icon: "checkmark.circle.fill", title: "高级统计图表", isChecked: true)
-                        featureItem(icon: "checkmark.circle.fill", title: "数据导出 (CSV)", isChecked: true)
-                        featureItem(icon: "checkmark.circle.fill", title: "优先客服支持", isChecked: false)
-                        featureItem(icon: "checkmark.circle.fill", title: "未来更多功能", isChecked: false)
-                    }
-                }
-                
-                Spacer()
-                
-                // 价格和购买按钮
-                VStack(spacing: PawRoutineTheme.Spacing.md) {
-                    if purchaseSuccess {
-                        Label("✅ 已成功激活 Pro 版！", systemImage: "checkmark.circle.fill")
-                            .font(PawRoutineTheme.PRFont.title3(.semibold))
-                            .foregroundStyle(.green)
-                    } else {
-                        Button {
-                            purchasePro()
-                        } label: {
-                            Text("¥ 68 实施解锁")
-                                .font(PawRoutineTheme.PRFont.bodyText(.semibold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
-                                        .fill(PawRoutineTheme.Colors.primary)
+                    // Header with Paw Icon
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [.orange, .pink]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
+                                .frame(width: 80, height: 80)
+                            
+                            Image(systemName: "pawprint.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.white)
                         }
-                        .disabled(isLoading)
                         
-                        Text("一次购买，永久使用")
-                            .font(PawRoutineTheme.PRFont.caption())
-                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        Text("PawRoutine Pro")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        Text("解锁全部功能，宠爱科学的养宠生活")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
                     
-                    if isLoading {
-                        ProgressView()
-                            .tint(PawRoutineTheme.Colors.primary)
+                    // Features List
+                    VStack(spacing: 14) {
+                        ProFeatureRow(isChecked: true, title: "无限宠物数量", subtitle: "不再限制宠物数量")
+                        ProFeatureRow(isChecked: true, title: "高级统计图表", subtitle: "更丰富的数据分析")
+                        ProFeatureRow(isChecked: true, title: "数据导出 (CSV)", subtitle: "优先客服支持")
+                        ProFeatureRow(isChecked: true, title: "优先客服支持", subtitle: "")
                     }
+                    .padding()
+                    .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 16))
+                    
+                    // Purchase Button
+                    Button(action: purchasePro) {
+                        Text("¥18 完整解锁")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                in: RoundedRectangle(cornerRadius: 14)
+                            )
+                    }
+                    
+                    Text("一次购买，永久使用")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
                 }
-                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-                .padding(.bottom, PawRoutineTheme.Spacing.xl)
+                .padding(.horizontal)
             }
             .navigationTitle("")
-            .navigationBarHidden(true)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("关闭") { dismiss() }
-                        .font(PawRoutineTheme.PRFont.bodyText())
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("关闭") {
+                        dismiss()
+                    }
+                    .foregroundColor(.blue)
                 }
             }
-        }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(PawRoutineTheme.Colors.bgPrimary)
-    }
-    
-    private func featureItem(icon: String, title: String, isChecked: Bool) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundStyle(isChecked ? .green : PawRoutineTheme.Colors.textTertiary)
-            
-            Text(title)
-                .font(PawRoutineTheme.PRFont.bodyText())
-                .foregroundStyle(isChecked ? PawRoutineTheme.Colors.textPrimary : PawRoutineTheme.Colors.textTertiary)
-            
-            Spacer()
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
         }
     }
     
     private func purchasePro() {
-        isLoading = true
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            appSetting?.isPro = true
-            isLoading = false
-            purchaseSuccess = true
+        settings.isPro = true
+        dismiss()
+    }
+}
+
+struct ProFeatureRow: View {
+    let isChecked: Bool
+    let title: String
+    let subtitle: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: isChecked ? "checkmark" : "circle")
+                .font(.subheadline)
+                .foregroundColor(isChecked ? .green : .secondary)
+                .padding(.top, 2)
             
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.success)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
         }
     }
-}
-
-// MARK: - Share Sheet Helper
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
-
-#Preview {
-    SettingsView()
-        .modelContainer(for: AppSettings.self, inMemory: true)
 }

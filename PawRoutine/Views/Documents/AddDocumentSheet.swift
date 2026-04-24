@@ -2,7 +2,7 @@
 //  AddDocumentSheet.swift
 //  PawRoutine
 //
-//  添加证件 - 设计稿还原
+//  添加证件 - 从 PawRoutine2 集成
 //
 
 import SwiftUI
