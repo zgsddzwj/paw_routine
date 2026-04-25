@@ -21,26 +21,26 @@ struct WeightChartView: View {
                 // Chart
                 if sortedWeightRecords.count >= 2 {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("体重趋势")
+                        Text("Weight Trend")
                             .font(.headline)
                         
                         Chart(sortedWeightRecords) { record in
                             LineMark(
-                                x: .value("日期", record.date),
-                                y: .value("体重", record.weight)
+                                x: .value("Date", record.date),
+                                y: .value("Weight", record.weight)
                             )
                             .foregroundStyle(.blue)
                             .lineStyle(StrokeStyle(lineWidth: 3))
                             
                             PointMark(
-                                x: .value("日期", record.date),
-                                y: .value("体重", record.weight)
+                                x: .value("Date", record.date),
+                                y: .value("Weight", record.weight)
                             )
                             .foregroundStyle(.blue)
                         }
                         .frame(height: 200)
-                        .chartYAxisLabel("体重 (kg)")
-                        .chartXAxisLabel("日期")
+                        .chartYAxisLabel("Weight (kg)")
+                        .chartXAxisLabel("Date")
                     }
                     .padding()
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
@@ -54,7 +54,7 @@ struct WeightChartView: View {
             }
             .padding()
         }
-        .navigationTitle("\(pet.name) 体重记录")
+        .navigationTitle(String(format: NSLocalizedString("%@ 体重记录", comment: ""), pet.name))
         .navigationBarTitleDisplayMode(.large)
     }
 }
@@ -82,18 +82,18 @@ struct WeightStatisticsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("统计信息")
+            Text("Statistics")
                 .font(.headline)
             
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                StatCard(title: "最低体重", value: String(format: "%.1f kg", minWeight), color: .blue)
-                StatCard(title: "最高体重", value: String(format: "%.1f kg", maxWeight), color: .orange)
-                StatCard(title: "平均体重", value: String(format: "%.1f kg", avgWeight), color: .green)
+                StatCard(title: "Lowest", value: LocalizedStringKey(String(format: "%.1f kg", minWeight)), color: .blue)
+                StatCard(title: "Highest", value: LocalizedStringKey(String(format: "%.1f kg", maxWeight)), color: .orange)
+                StatCard(title: "Average", value: LocalizedStringKey(String(format: "%.1f kg", avgWeight)), color: .green)
                 
                 if let change = weightChange {
                     StatCard(
-                        title: "总变化",
-                        value: String(format: "%@%.1f kg", change >= 0 ? "+" : "", change),
+                        title: "Total Change",
+                        value: LocalizedStringKey(String(format: "%@%.1f kg", change >= 0 ? "+" : "", change)),
                         color: change >= 0 ? .green : .red
                     )
                 }
@@ -105,8 +105,8 @@ struct WeightStatisticsView: View {
 }
 
 struct StatCard: View {
-    let title: String
-    let value: String
+    let title: LocalizedStringKey
+    let value: LocalizedStringKey
     let color: Color
     
     var body: some View {
@@ -131,7 +131,7 @@ struct WeightRecordsListView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("历史记录")
+            Text("History")
                 .font(.headline)
             
             LazyVStack(spacing: 8) {

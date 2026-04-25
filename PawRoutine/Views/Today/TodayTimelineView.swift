@@ -2,231 +2,258 @@
 //  TodayTimelineView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
+import SwiftData
 
 struct TodayTimelineView: View {
     let pet: Pet
     @EnvironmentObject private var petStore: PetStore
+    @Environment(\.modelContext) private var modelContext
+    @Query private var settings: [AppSettings]
+    
+    @State private var selectedActivity: Activity?
+    
+    private var currentSettings: AppSettings {
+        settings.first ?? AppSettings()
+    }
     
     var todayActivities: [Activity] {
         petStore.getTodayActivities(for: pet)
     }
     
-    // Generate upcoming reminders based on settings (simplified)
-    private var upcomingReminders: [(String, String, String)] {
-        let calendar = Calendar.current
+    private var upcomingReminders: [(String, LocalizedStringKey, ActivityType)] {
         let now = Date()
-        let hour = calendar.component(.hour, from: now)
         
-        var reminders: [(String, String, String)] = []
+        var reminders: [(time: Date, title: LocalizedStringKey, type: ActivityType)] = []
         
-        // Default reminder times matching design
-        if hour < 8 {
-            reminders.append(("08:30", "喂食（早餐）", "🍖"))
-            reminders.append(("09:00", "换水", "💧"))
-        }
-        if hour < 12 {
-            reminders.append(("12:15", "遛狗", "🦮"))
-        }
-        if hour < 16 {
-            reminders.append(("16:00", "喂食（晚餐）", "🍖"))
-        }
-        if hour < 20 {
-            reminders.append(("20:00", "遛狗", "🦮"))
+        if currentSettings.feedingReminderEnabled {
+            reminders.append((currentSettings.morningFeedingTime, "Feeding (Breakfast)", .feeding))
+            reminders.append((currentSettings.eveningFeedingTime, "Feeding (Dinner)", .feeding))
         }
         
-        // Filter out past times more precisely
-        return reminders.filter { timeStr, _, _ in
-            guard let reminderTime = parseTime(timeStr) else { return true }
-            return reminderTime > now
+        if currentSettings.walkReminderEnabled {
+            reminders.append((currentSettings.morningWalkTime, "Walking", .walking))
+            reminders.append((currentSettings.eveningWalkTime, "Walking", .walking))
         }
+        
+        if currentSettings.waterReminderEnabled {
+            reminders.append((currentSettings.waterChangeTime, "Water Change", .waterChange))
+        }
+        
+        let filtered = reminders.filter { $0.time > now }
+            .sorted { $0.time < $1.time }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        
+        return filtered.map { (formatter.string(from: $0.time), $0.title, $0.type) }
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("今日时间轴")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+        PRCard {
+            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.lg) {
+                Text("Today's Timeline")
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                 
-                Spacer()
-            }
-            
-            // Completed activities
-            if !todayActivities.isEmpty {
-                LazyVStack(spacing: 10) {
-                    ForEach(todayActivities) { activity in
-                        TimelineItemView(activity: activity)
+                // Completed activities
+                if !todayActivities.isEmpty {
+                    VStack(spacing: 0) {
+                        ForEach(Array(todayActivities.enumerated()), id: \.element.id) { index, activity in
+                            TimelineItemView(
+                                activity: activity,
+                                isLast: index == todayActivities.count - 1 && upcomingReminders.isEmpty
+                            )
+                            .onTapGesture {
+                                selectedActivity = activity
+                            }
+                            .contextMenu {
+                                Button {
+                                    selectedActivity = activity
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                
+                                Button(role: .destructive) {
+                                    deleteActivity(activity)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
                     }
+                } else {
+                    EmptyTimelineView()
                 }
-            } else {
-                EmptyTimelineView()
-            }
-            
-            // Upcoming Reminders Section (NEW - matching design)
-            if !upcomingReminders.isEmpty {
-                Divider()
                 
-                HStack {
-                    Text("即将到来")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.secondary)
+                // Upcoming Reminders
+                if !upcomingReminders.isEmpty {
+                    Divider()
+                        .padding(.vertical, PawRoutineTheme.Spacing.sm)
                     
-                    Spacer()
-                }
-                .padding(.top, 4)
-                
-                LazyVStack(spacing: 10) {
-                    ForEach(upcomingReminders.indices, id: \.self) { index in
-                        let reminder = upcomingReminders[index]
-                        UpcomingReminderRow(
-                            time: reminder.0,
-                            title: reminder.1,
-                            icon: reminder.2
-                        )
+                    Text("Upcoming")
+                        .font(PawRoutineTheme.PRFont.caption(.semibold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                        .padding(.bottom, PawRoutineTheme.Spacing.sm)
+                    
+                    VStack(spacing: 0) {
+                        ForEach(Array(upcomingReminders.enumerated()), id: \.offset) { index, reminder in
+                            UpcomingReminderRow(
+                                time: reminder.0,
+                                title: reminder.1,
+                                activityType: reminder.2,
+                                isLast: index == upcomingReminders.count - 1
+                            )
+                        }
                     }
                 }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .sheet(item: $selectedActivity) { activity in
+            EditActivityView(activity: activity, pet: pet)
+        }
     }
     
-    /// Parse a time string like "08:30" into today's date
-    private func parseTime(_ timeStr: String) -> Date? {
-        let components = timeStr.split(separator: ":").compactMap { Int($0) }
-        guard components.count == 2 else { return nil }
-        let calendar = Calendar.current
-        return calendar.date(bySettingHour: components[0], minute: components[1], second: 0, of: Date())
+    private func deleteActivity(_ activity: Activity) {
+        if let index = pet.activities.firstIndex(where: { $0.id == activity.id }) {
+            pet.activities.remove(at: index)
+        }
+        modelContext.delete(activity)
+        try? modelContext.save()
     }
 }
 
 struct TimelineItemView: View {
     let activity: Activity
+    let isLast: Bool
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Time
-            VStack {
-                Text(activity.timestamp.formatted(date: .omitted, time: .shortened))
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
-            }
-            .frame(width: 50)
-            
-            // Activity indicator - completed checkmark style
-            ZStack {
+        HStack(alignment: .top, spacing: PawRoutineTheme.Spacing.md) {
+            // Time column with line
+            VStack(spacing: 0) {
                 Circle()
-                    .fill(Color.green.opacity(0.15))
-                    .frame(width: 22, height: 22)
+                    .fill(PawRoutineTheme.Colors.walking)
+                    .frame(width: 8, height: 8)
+                    .padding(.top, 16)
                 
-                Image(systemName: "checkmark")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.green)
-            }
-            
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(activity.type.icon)
-                        .font(.body)
-                    
-                    Text(activity.type.rawValue)
-                        .font(.body)
-                        .fontWeight(.medium)
-                    
-                    Spacer()
-                    
-                    // Checkmark for completed items
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.subheadline)
-                        .foregroundColor(.green)
-                }
-                
-                if let notes = activity.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
+                if !isLast {
+                    Rectangle()
+                        .fill(PawRoutineTheme.Colors.separator)
+                        .frame(width: 1.5)
+                        .frame(maxHeight: .infinity)
                 }
             }
-        }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-// MARK: - NEW: Upcoming Reminder Row
-struct UpcomingReminderRow: View {
-    let time: String
-    let title: String
-    let icon: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Time
-            Text(time)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(.secondary)
-                .frame(width: 50)
-            
-            // Pending indicator circle
-            ZStack {
-                Circle()
-                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [4]))
-                    .foregroundColor(.blue.opacity(0.4))
-                    .frame(width: 22, height: 22)
-            }
+            .frame(width: 24, alignment: .top)
             
             // Content
-            HStack(spacing: 6) {
-                Text(icon)
-                    .font(.body)
-                
-                Text(title)
-                    .font(.body)
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(activity.timestamp, format: .dateTime.hour().minute())
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    
+                    HStack(spacing: 6) {
+                        ActivityTypeIcon(type: activity.type, size: 20)
+                        
+                        Text(activity.type.displayName)
+                            .font(PawRoutineTheme.PRFont.bodyText(.medium))
+                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                    }
+                    
+                    if let notes = activity.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(PawRoutineTheme.PRFont.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
                 
                 Spacer()
                 
-                // Optional tag like "提醒"
-                Text("提醒")
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(.blue.opacity(0.1), in: Capsule())
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(PawRoutineTheme.Colors.walking)
             }
+            .padding(.vertical, PawRoutineTheme.Spacing.md)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(.quaternary.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+        .frame(minHeight: 56)
+    }
+}
+
+struct UpcomingReminderRow: View {
+    let time: String
+    let title: LocalizedStringKey
+    let activityType: ActivityType
+    let isLast: Bool
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: PawRoutineTheme.Spacing.md) {
+            // Time column with line
+            VStack(spacing: 0) {
+                Circle()
+                    .stroke(PawRoutineTheme.Colors.textTertiary.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 8, height: 8)
+                    .padding(.top, 16)
+                
+                if !isLast {
+                    Rectangle()
+                        .fill(PawRoutineTheme.Colors.separator)
+                        .frame(width: 1.5)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+            .frame(width: 24, alignment: .top)
+            
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(time)
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    
+                    HStack(spacing: 6) {
+                        ActivityTypeIcon(type: activityType, size: 20)
+                        
+                        Text(title)
+                            .font(PawRoutineTheme.PRFont.bodyText(.medium))
+                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    }
+                }
+                
+                Spacer()
+                
+                Text("Reminder")
+                    .font(PawRoutineTheme.PRFont.caption2(.semibold))
+                    .foregroundStyle(PawRoutineTheme.Colors.primary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(PawRoutineTheme.Colors.primary.opacity(0.1), in: Capsule())
+            }
+            .padding(.vertical, PawRoutineTheme.Spacing.md)
+        }
+        .frame(minHeight: 56)
     }
 }
 
 struct EmptyTimelineView: View {
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "clock.fill")
-                .font(.title)
-                .foregroundColor(.gray)
-            
-            Text("今天还没有活动记录")
-                .font(.body)
-                .fontWeight(.medium)
-            
-            Text("点击右下角的 + 按钮开始记录")
-                .font(.caption)
-                .foregroundColor(.secondary)
+        HStack {
+            Spacer()
+            VStack(spacing: PawRoutineTheme.Spacing.md) {
+                Image(systemName: "clock")
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
+                
+                Text("No activities recorded today")
+                    .font(PawRoutineTheme.PRFont.bodyText(.medium))
+                    .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                
+                Text("Tap the + button to start recording")
+                    .font(PawRoutineTheme.PRFont.caption())
+                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+            }
+            .padding(.vertical, PawRoutineTheme.Spacing.xxl)
+            Spacer()
         }
-        .padding(.vertical, 20)
     }
 }

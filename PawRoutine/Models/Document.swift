@@ -33,18 +33,22 @@ final class Document {
 }
 
 enum DocumentType: String, Codable, CaseIterable, Identifiable {
-    case vaccineBook = "疫苗本"
-    case neuteringCert = "绝育证明"
-    case medicalReport = "体检报告"
-    case other = "其他证件"
+    case vaccineBook = "Vaccine Book"
+    case neuteringCert = "Neutering Certificate"
+    case medicalReport = "Medical Report"
+    case other = "Other Document"
     
     var id: String { rawValue }
+    
+    var displayName: String {
+        NSLocalizedString(rawValue, comment: "Document type")
+    }
     
     var icon: String {
         switch self {
         case .vaccineBook: return "book.closed.fill"
         case .neuteringCert: return "checkmark.seal.fill"
-        case .medicalReport: return "clipboard.medical"
+        case .medicalReport: return "stethoscope"
         case .other: return "doc.fill"
         }
     }

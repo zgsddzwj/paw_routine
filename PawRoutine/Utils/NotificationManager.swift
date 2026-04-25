@@ -17,29 +17,66 @@ final class NotificationManager {
     
     private init() {}
     
+    // MARK: - Daily Reminders (绑定了 AppSettings 开关)
+    
+    /// 为单个宠物根据当前 AppSettings 调度所有开启的日常提醒
+    func scheduleDailyReminders(for pet: Pet, settings: AppSettings) {
+        removeDailyReminders(for: pet)
+        
+        if settings.feedingReminderEnabled {
+            scheduleActivityReminder(for: pet, activityType: .feeding, at: settings.morningFeedingTime, suffix: "morning")
+            scheduleActivityReminder(for: pet, activityType: .feeding, at: settings.eveningFeedingTime, suffix: "evening")
+        }
+        
+        if settings.walkReminderEnabled {
+            scheduleActivityReminder(for: pet, activityType: .walking, at: settings.morningWalkTime, suffix: "morning")
+            scheduleActivityReminder(for: pet, activityType: .walking, at: settings.eveningWalkTime, suffix: "evening")
+        }
+        
+        if settings.waterReminderEnabled {
+            scheduleActivityReminder(for: pet, activityType: .waterChange, at: settings.waterChangeTime, suffix: "daily")
+        }
+    }
+    
+    /// 当 AppSettings 变更时，为所有宠物重新调度日常提醒
+    func rescheduleDailyReminders(for pets: [Pet], settings: AppSettings) {
+        for pet in pets {
+            scheduleDailyReminders(for: pet, settings: settings)
+        }
+    }
+    
+    /// 取消单个宠物的所有日常提醒
+    func removeDailyReminders(for pet: Pet) {
+        let petIDString = petIDString(from: pet)
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let identifiersToRemove = requests.compactMap { request in
+                request.identifier.hasPrefix("daily_\(petIDString)_") ? request.identifier : nil
+            }
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+        }
+    }
+    
     // MARK: - Activity Reminders
     
-    func scheduleActivityReminder(for pet: Pet, activityType: ActivityType, at time: Date) {
+    private func scheduleActivityReminder(for pet: Pet, activityType: ActivityType, at time: Date, suffix: String) {
         let content = UNMutableNotificationContent()
-        content.title = "宠物提醒"
-        content.body = "该为 \(pet.name) \(activityType.rawValue)了"
+        content.title = NSLocalizedString("🐾 Pet Reminder", comment: "")
+        content.body = String(format: NSLocalizedString("该为 %@ %@了", comment: ""), pet.name, activityType.displayName)
         content.sound = .default
-        content.badge = 1
         
         let calendar = Calendar.current
         let components = calendar.dateComponents([.hour, .minute], from: time)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
         
-        // Use hash of PersistentIdentifier for stable string ID
         let petIDString = petIDString(from: pet)
-        let identifier = "pet_\(petIDString)_\(activityType.rawValue)_\(components.hour ?? 0)_\(components.minute ?? 0)"
+        let identifier = "daily_\(petIDString)_\(activityType.rawValue)_\(suffix)_\(components.hour ?? 0)_\(components.minute ?? 0)"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
+                #if DEBUG
                 print("Failed to schedule notification: \(error.localizedDescription)")
-            } else {
-                print("Scheduled notification for \(pet.name) - \(activityType.rawValue)")
+                #endif
             }
         }
     }
@@ -50,10 +87,9 @@ final class NotificationManager {
         guard let dueDate = record.nextDueDate else { return }
         
         let content = UNMutableNotificationContent()
-        content.title = "医疗提醒"
-        content.body = "\(pet.name) 需要进行 \(record.type.rawValue)"
+        content.title = NSLocalizedString("🏥 Medical Reminder", comment: "")
+        content.body = String(format: NSLocalizedString("%@ 需要进行 %@", comment: ""), pet.name, record.type.displayName)
         content.sound = .default
-        content.badge = 1
         
         let calendar = Calendar.current
         let triggerDate = calendar.date(byAdding: .hour, value: 9, to: calendar.startOfDay(for: dueDate)) ?? dueDate
@@ -67,9 +103,9 @@ final class NotificationManager {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
+                #if DEBUG
                 print("Failed to schedule medical reminder: \(error.localizedDescription)")
-            } else {
-                print("Scheduled medical reminder for \(pet.name) - \(record.type.rawValue)")
+                #endif
             }
         }
     }
@@ -93,15 +129,13 @@ final class NotificationManager {
     
     // MARK: - Helper Methods
     
-    /// Convert Pet's PersistentIdentifier to a usable string
+    /// Use Pet's UUID as stable identifier
     private func petIDString(from pet: Pet) -> String {
-        let id = pet.persistentModelID
-        return id.hashValue.description
+        return pet.id.uuidString
     }
     
-    /// Convert MedicalRecord's PersistentIdentifier to a usable string
+    /// Use MedicalRecord's UUID as stable identifier
     private func recordIDString(from record: MedicalRecord) -> String {
-        let id = record.persistentModelID
-        return id.hashValue.description
+        return record.id.uuidString
     }
 }

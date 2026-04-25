@@ -1,0 +1,38 @@
+{
+  "identifier": "8A9B2C3D-4E5F-6A7B-8C9D-0E1F2A3B4C5D",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "com.furrynote.pro.unlock",
+      "localizations": [
+        {
+          "description": "解锁 FurryNote 全部 Pro 功能",
+          "displayName": "FurryNote Pro",
+          "locale": "zh_CN"
+        },
+        {
+          "description": "Unlock all FurryNote Pro features",
+          "displayName": "FurryNote Pro",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.furrynote.pro.unlock",
+      "referenceName": "FurryNote Pro",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "1234567890",
+    "_developerTeamID": "ABCDE12345",
+    "_lastSynchronizedDate": 1745581200,
+    "_failTransactionsEnabled": false,
+    "_storeKitError": 0
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

@@ -14,27 +14,27 @@ struct WelcomeView: View {
     private let pages = [
         OnboardingPage(
             icon: "pawprint.fill",
-            title: "欢迎使用 PawRoutine",
-            subtitle: "科学管理宠物的日常起居和健康档案",
-            description: "帮助您记录、追踪和管理宠物的每一个重要时刻"
+            title: NSLocalizedString("Welcome to PawRoutine", comment: ""),
+            subtitle: NSLocalizedString("Scientifically manage your pet's daily life and health records", comment: ""),
+            description: NSLocalizedString("Help you record, track and manage every important moment of your pet", comment: "")
         ),
         OnboardingPage(
             icon: "clock.fill",
-            title: "智能提醒",
-            subtitle: "从此不再忘记重要时刻",
-            description: "自动提醒喂食、遛狗、医疗检查等重要事项"
+            title: NSLocalizedString("Smart Reminders", comment: ""),
+            subtitle: NSLocalizedString("Never forget important moments again", comment: ""),
+            description: NSLocalizedString("Automatically remind you of feeding, walking, medical checkups and more", comment: "")
         ),
         OnboardingPage(
             icon: "chart.xyaxis.line",
-            title: "数据统计",
-            subtitle: "直观的趋势分析",
-            description: "通过图表和统计了解宠物的健康状态和行为模式"
+            title: NSLocalizedString("Data Statistics", comment: ""),
+            subtitle: NSLocalizedString("Intuitive trend analysis", comment: ""),
+            description: NSLocalizedString("Understand your pet's health and behavior through charts and statistics", comment: "")
         ),
         OnboardingPage(
             icon: "icloud.fill",
-            title: "云端同步",
-            subtitle: "多设备无缝体验",
-            description: "通过 iCloud 在所有设备间同步宠物数据"
+            title: NSLocalizedString("Cloud Sync", comment: ""),
+            subtitle: NSLocalizedString("Seamless multi-device experience", comment: ""),
+            description: NSLocalizedString("Sync pet data across all devices via iCloud", comment: "")
         )
     ]
     
@@ -65,7 +65,7 @@ struct WelcomeView: View {
                 // Action Buttons
                 HStack(spacing: 16) {
                     if currentPage > 0 {
-                        Button("上一步") {
+                        Button(NSLocalizedString("Previous", comment: "")) {
                             withAnimation {
                                 currentPage -= 1
                             }
@@ -76,7 +76,7 @@ struct WelcomeView: View {
                     Spacer()
                     
                     if currentPage < pages.count - 1 {
-                        Button("下一步") {
+                        Button(NSLocalizedString("Next", comment: "")) {
                             withAnimation {
                                 currentPage += 1
                             }
@@ -87,7 +87,7 @@ struct WelcomeView: View {
                         .padding(.vertical, 12)
                         .background(.blue, in: Capsule())
                     } else {
-                        Button("开始使用") {
+                        Button(NSLocalizedString("Get Started", comment: "")) {
                             withAnimation {
                                 showWelcome = false
                             }

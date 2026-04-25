@@ -10,6 +10,7 @@ import SwiftData
 
 @Model
 final class Pet {
+    var id: UUID
     var name: String
     var breed: String
     var gender: Gender
@@ -24,7 +25,8 @@ final class Pet {
     @Relationship(deleteRule: .cascade) var weightRecords: [WeightRecord] = []
     @Relationship(deleteRule: .cascade) var documents: [Document] = []
     
-    init(name: String, breed: String, gender: Gender, birthDate: Date, isNeutered: Bool = false) {
+    init(id: UUID = UUID(), name: String, breed: String, gender: Gender, birthDate: Date, isNeutered: Bool = false) {
+        self.id = id
         self.name = name
         self.breed = breed
         self.gender = gender
@@ -56,16 +58,20 @@ final class Pet {
         let days = ageInDays % 30
         
         if years > 0 {
-            return "\(years)岁 \(months)个月 \(days)天"
+            return String(format: NSLocalizedString("%d岁 %d个月 %d天", comment: ""), years, months, days)
         } else if months > 0 {
-            return "\(months)个月 \(days)天"
+            return String(format: NSLocalizedString("%d个月 %d天", comment: ""), months, days)
         } else {
-            return "\(days)天"
+            return String(format: NSLocalizedString("%d天", comment: ""), days)
         }
     }
 }
 
 enum Gender: String, CaseIterable, Codable {
-    case male = "公"
-    case female = "母"
+    case male = "Male"
+    case female = "Female"
+    
+    var displayName: String {
+        NSLocalizedString(rawValue, comment: "Pet gender")
+    }
 }

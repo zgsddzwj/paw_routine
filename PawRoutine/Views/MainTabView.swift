@@ -2,8 +2,6 @@
 //  MainTabView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
 import SwiftData
@@ -19,47 +17,36 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient for liquid glass effect
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(.systemBackground),
-                    Color(.systemBackground).opacity(0.8)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
             TabView(selection: $selectedTab) {
                 TodayView()
                     .tabItem {
                         Image(systemName: "sun.max.fill")
-                        Text("今日")
+                        Text("Today")
                     }
                     .tag(0)
                 
                 ProfilesView()
                     .tabItem {
                         Image(systemName: "pawprint.fill")
-                        Text("档案")
+                        Text("Profiles")
                     }
                     .tag(1)
                 
                 InsightsView()
                     .tabItem {
                         Image(systemName: "chart.line.uptrend.xyaxis")
-                        Text("统计")
+                        Text("Statistics")
                     }
                     .tag(2)
                 
                 SettingsView()
                     .tabItem {
                         Image(systemName: "gearshape.fill")
-                        Text("设置")
+                        Text("Settings")
                     }
                     .tag(3)
             }
-            .accentColor(.blue)
+            .accentColor(PawRoutineTheme.Colors.primary)
             
             // Floating Quick Add Button
             VStack {
@@ -69,19 +56,36 @@ struct MainTabView: View {
                     Button(action: {
                         petStore.showingQuickAdd = true
                     }) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(
-                                Circle()
-                                    .fill(.blue)
-                                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                            )
+                        ZStack {
+                            // Outer soft glow
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [PawRoutineTheme.Colors.primary, PawRoutineTheme.Colors.secondary],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 64, height: 64)
+                                .shadow(
+                                    color: PawRoutineTheme.Colors.primary.opacity(0.4),
+                                    radius: 16,
+                                    x: 0,
+                                    y: 8
+                                )
+                            
+                            // Inner subtle border
+                            Circle()
+                                .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                                .frame(width: 64, height: 64)
+                            
+                            Image(systemName: "plus")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                     }
                     .padding(.trailing, 20)
-                    .padding(.bottom, 90) // Above tab bar
+                    .padding(.bottom, 90)
                 }
             }
         }
@@ -90,19 +94,39 @@ struct MainTabView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $petStore.showingAddPet) {
+            AddPetView()
+        }
         .fullScreenCover(isPresented: $showWelcome) {
             WelcomeView(showWelcome: $showWelcome)
         }
         .onAppear {
-            // Select first pet if available
-            if petStore.selectedPet == nil && !pets.isEmpty {
-                petStore.selectedPet = pets.first
+            // Ensure AppSettings exists
+            if (try? modelContext.fetchCount(FetchDescriptor<AppSettings>())) == 0 {
+                let newSettings = AppSettings()
+                modelContext.insert(newSettings)
+                try? modelContext.save()
             }
             
-            // Show welcome if first time
+            petStore.restoreSelectedPet(from: pets)
+            
             if !hasSeenWelcome {
                 showWelcome = true
                 hasSeenWelcome = true
+            }
+            
+            // Initial schedule of daily reminders for all existing pets
+            if let settings = try? modelContext.fetch(FetchDescriptor<AppSettings>()).first {
+                NotificationManager.shared.rescheduleDailyReminders(for: pets, settings: settings)
+            }
+            
+            // Sync StoreKit Pro status to SwiftData (handles both purchase and refund)
+            if let settings = try? modelContext.fetch(FetchDescriptor<AppSettings>()).first {
+                let storeKitPro = IAPManager.shared.isPro
+                if settings.isPro != storeKitPro {
+                    settings.isPro = storeKitPro
+                    try? modelContext.save()
+                }
             }
         }
     }

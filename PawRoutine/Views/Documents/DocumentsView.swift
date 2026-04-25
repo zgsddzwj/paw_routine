@@ -2,8 +2,6 @@
 //  DocumentsView.swift
 //  PawRoutine
 //
-//  证件夹 - 从 PawRoutine2 回滚
-//
 
 import SwiftUI
 import SwiftData
@@ -13,45 +11,55 @@ struct DocumentsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showAddDocument = false
     @State private var isEditing = false
+    @State private var selectedDocument: Document?
+    @State private var showingDetail = false
     
     private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
+        GridItem(.flexible(), spacing: 20),
+        GridItem(.flexible(), spacing: 20)
     ]
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: PawRoutineTheme.Spacing.lg) {
-                if pet.documents.isEmpty {
-                    PREmptyState(
-                        icon: "folder.fill",
-                        title: "还没有证件",
-                        subtitle: "点击右上角或下方按钮添加证件照片"
-                    )
-                    .padding(.top, 60)
-                } else {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(pet.documents) { doc in
-                            DocumentCard(document: doc, isEditing: isEditing) {
-                                deleteDocument(doc)
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                    if pet.documents.isEmpty {
+                        PREmptyState(
+                            icon: "folder.fill",
+                            title: "No Documents Yet",
+                            subtitle: "Tap the top-right or bottom button to add document photos"
+                        )
+                        .padding(.top, 60)
+                    } else {
+                        LazyVGrid(columns: columns, spacing: 24) {
+                            ForEach(pet.documents) { doc in
+                                DocumentCard(document: doc, isEditing: isEditing) {
+                                    deleteDocument(doc)
+                                }
+                                .onTapGesture {
+                                    if !isEditing {
+                                        selectedDocument = doc
+                                        showingDetail = true
+                                    }
+                                }
                             }
+                            
+                            addButtonCard
                         }
-                        
-                        // 添加按钮
-                        addButtonCard
                     }
                 }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                .padding(.bottom, PawRoutineTheme.Spacing.xxxl)
             }
-            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
-        .navigationTitle("证件夹")
+        .navigationTitle("Documents")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if !pet.documents.isEmpty {
-                    Button(isEditing ? "完成" : "编辑") {
+                    Button(isEditing ? "Done" : "Edit") {
                         withAnimation {
                             isEditing.toggle()
                         }
@@ -72,6 +80,11 @@ struct DocumentsView: View {
         .sheet(isPresented: $showAddDocument) {
             AddDocumentSheet(pet: pet)
         }
+        .sheet(isPresented: $showingDetail) {
+            if let doc = selectedDocument {
+                DocumentDetailView(document: doc, pet: pet)
+            }
+        }
     }
     
     private var addButtonCard: some View {
@@ -79,29 +92,42 @@ struct DocumentsView: View {
             showAddDocument = true
         } label: {
             VStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
-                    .fill(PawRoutineTheme.Colors.bgSecondary)
-                    .frame(height: 140)
+                RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous)
+                    .stroke(
+                        PawRoutineTheme.Colors.primary.opacity(0.3),
+                        style: StrokeStyle(lineWidth: 1.5, dash: [5, 3])
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                    .background(PawRoutineTheme.Colors.bgCard, in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous))
                     .overlay(
-                        Image(systemName: "plus")
-                            .font(.system(size: 28, weight: .light))
-                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        VStack(spacing: 6) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundStyle(PawRoutineTheme.Colors.primary)
+                            Text("Add Document")
+                                .font(PawRoutineTheme.PRFont.caption())
+                                .foregroundStyle(PawRoutineTheme.Colors.primary)
+                        }
                     )
                 
-                Text("添加证件")
-                    .font(PawRoutineTheme.PRFont.caption())
-                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Add Document")
+                        .font(PawRoutineTheme.PRFont.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    Text(" ")
+                        .font(PawRoutineTheme.PRFont.caption2())
+                        .foregroundStyle(Color.clear)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func deleteDocument(_ doc: Document) {
         modelContext.delete(doc)
     }
 }
-
-// MARK: - Document Card
 
 struct DocumentCard: View {
     let document: Document
@@ -114,17 +140,30 @@ struct DocumentCard: View {
                 if let imageData = document.imageData, let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 140)
-                        .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md))
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                        .background(PawRoutineTheme.Colors.bgCard)
+                        .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous))
+                        .shadow(
+                            color: PawRoutineTheme.Shadows.small.color,
+                            radius: PawRoutineTheme.Shadows.small.radius,
+                            x: PawRoutineTheme.Shadows.small.x,
+                            y: PawRoutineTheme.Shadows.small.y
+                        )
                 } else {
-                    RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md)
-                        .fill(PawRoutineTheme.Colors.bgSecondary)
-                        .frame(height: 140)
+                    RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous)
+                        .fill(PawRoutineTheme.Colors.bgCard)
+                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
                         .overlay(
                             Image(systemName: document.documentType.icon)
-                                .font(.title)
-                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                                .font(.system(size: 28))
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
+                        )
+                        .shadow(
+                            color: PawRoutineTheme.Shadows.small.color,
+                            radius: PawRoutineTheme.Shadows.small.radius,
+                            x: PawRoutineTheme.Shadows.small.x,
+                            y: PawRoutineTheme.Shadows.small.y
                         )
                 }
                 

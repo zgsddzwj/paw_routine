@@ -2,8 +2,6 @@
 //  ProfilesView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
 import SwiftData
@@ -11,43 +9,66 @@ import SwiftData
 struct ProfilesView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var petStore: PetStore
+    @Query private var settings: [AppSettings]
     @Query private var pets: [Pet]
     @State private var showingAddPet = false
+    @State private var showingProSheet = false
+    
+    private var currentSettings: AppSettings {
+        settings.first ?? AppSettings()
+    }
+    
+    private var canAddPet: Bool {
+        IAPManager.shared.isPro || currentSettings.isPro || pets.isEmpty
+    }
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    if pets.isEmpty {
-                        EmptyProfilesView()
-                    } else {
-                        ForEach(pets) { pet in
-                            NavigationLink(destination: PetDetailView(pet: pet)) {
-                                PetProfileCard(pet: pet)
+            ZStack {
+                PRWarmBackground().ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: PawRoutineTheme.Spacing.lg) {
+                        if pets.isEmpty {
+                            EmptyProfilesView()
+                        } else {
+                            ForEach(pets) { pet in
+                                NavigationLink(destination: PetDetailView(pet: pet)) {
+                                    PetProfileCard(pet: pet)
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
+                        
+                        Spacer(minLength: 100)
                     }
-                    
-                    Spacer(minLength: 100) // Space for floating button
+                    .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                    .padding(.top, PawRoutineTheme.Spacing.sm)
                 }
-                .padding(.horizontal)
             }
-            .navigationTitle("宠物档案")
+            .navigationTitle("Profiles")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        showingAddPet = true
+                        if canAddPet {
+                            showingAddPet = true
+                        } else {
+                            showingProSheet = true
+                        }
                     }) {
                         Image(systemName: "plus")
-                            .fontWeight(.semibold)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.primary)
                     }
                 }
             }
         }
         .sheet(isPresented: $showingAddPet) {
             AddPetView()
+        }
+        .sheet(isPresented: $showingProSheet) {
+            ProUpgradeView(settings: currentSettings)
         }
     }
 }
@@ -56,126 +77,111 @@ struct PetProfileCard: View {
     let pet: Pet
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 16) {
-                // Pet Avatar
-                ZStack {
+        HStack(spacing: PawRoutineTheme.Spacing.lg) {
+            // Pet Avatar
+            ZStack {
+                if let imageData = pet.profileImageData,
+                   let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 64, height: 64)
+                        .clipShape(Circle())
+                } else {
                     Circle()
-                        .fill(.ultraThinMaterial)
-                        .frame(width: 80, height: 80)
-                    
-                    if let imageData = pet.profileImageData,
-                       let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 72, height: 72)
-                            .clipShape(Circle())
-                    } else {
-                        Image(systemName: "pawprint.fill")
-                            .font(.title)
-                            .foregroundColor(.blue)
-                    }
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    PawRoutineTheme.Colors.primary.opacity(0.15),
+                                    PawRoutineTheme.Colors.secondary.opacity(0.10)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                        .overlay(
+                            Image(systemName: "pawprint.fill")
+                                .font(.system(size: 26))
+                                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.5))
+                        )
                 }
+            }
+            
+            // Pet Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(pet.name)
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                 
-                // Pet Info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(pet.name)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
+                if !pet.breed.isEmpty {
                     Text(pet.breed)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    HStack {
-                        Text(pet.gender.rawValue)
-                        Text("•")
-                        Text(pet.isNeutered ? "已绝育" : "未绝育")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                        .font(PawRoutineTheme.PRFont.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                 }
                 
-                Spacer()
-                
-                // Age Info
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(pet.ageDescription)
-                        .font(.caption)
-                        .fontWeight(.medium)
+                HStack(spacing: 4) {
+                    Text(pet.gender.displayName)
+                        .font(PawRoutineTheme.PRFont.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     
-                    Text("相当于人类")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    Text("·")
+                        .font(PawRoutineTheme.PRFont.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     
-                    Text("\(Int(pet.ageInHumanYears))岁")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
+                    Text(pet.isNeutered ? "Neutered" : "Not Neutered")
+                        .font(PawRoutineTheme.PRFont.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                 }
             }
             
-            // Quick Stats
-            HStack(spacing: 20) {
-                StatItem(
-                    title: "今日活动",
-                    value: "\(pet.activities.filter { Calendar.current.isDateInToday($0.timestamp) }.count)"
-                )
-                
-                StatItem(
-                    title: "医疗记录",
-                    value: "\(pet.medicalRecords.count)"
-                )
-                
-                StatItem(
-                    title: "体重记录",
-                    value: "\(pet.weightRecords.count)"
-                )
-            }
-            .padding(.top, 8)
-        }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-    }
-}
-
-struct StatItem: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(.blue)
+            Spacer()
             
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            // Age
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(String(format: NSLocalizedString("%d岁", comment: ""), pet.ageInDays / 365))
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.primary)
+                
+                Text(String(format: NSLocalizedString("≈ %.0f 人类岁", comment: ""), pet.ageInHumanYears))
+                    .font(PawRoutineTheme.PRFont.caption2())
+                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+            }
         }
-        .frame(maxWidth: .infinity)
+        .padding(PawRoutineTheme.Spacing.lg)
+        .background(PawRoutineTheme.Colors.bgCard)
+        .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous))
+        .shadow(
+            color: PawRoutineTheme.Shadows.card.color,
+            radius: PawRoutineTheme.Shadows.card.radius,
+            x: PawRoutineTheme.Shadows.card.x,
+            y: PawRoutineTheme.Shadows.card.y
+        )
     }
 }
 
 struct EmptyProfilesView: View {
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "pawprint")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
+        VStack(spacing: PawRoutineTheme.Spacing.xl) {
+            Spacer().frame(height: 60)
             
-            Text("还没有宠物档案")
-                .font(.title2)
-                .fontWeight(.medium)
+            Image(systemName: "pawprint.circle.fill")
+                .font(.system(size: 72, weight: .light))
+                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.2))
             
-            Text("创建您的第一个宠物档案，开始记录它们的健康与成长")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: PawRoutineTheme.Spacing.sm) {
+                Text("No Pet Profiles Yet")
+                    .font(PawRoutineTheme.PRFont.title2(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                
+                Text("Create your first pet profile to start tracking their health and growth.")
+                    .font(PawRoutineTheme.PRFont.bodyText())
+                    .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, PawRoutineTheme.Spacing.xxl)
+            }
+            
+            Spacer()
         }
-        .padding(.vertical, 40)
     }
 }

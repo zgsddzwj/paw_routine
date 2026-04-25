@@ -15,8 +15,20 @@ class PetStore: ObservableObject {
     @Published var showingQuickAdd = false
     @Published var showingAddPet = false
     
+    @AppStorage("selectedPetID") private var selectedPetIDString: String = ""
+    
     func selectPet(_ pet: Pet) {
         selectedPet = pet
+        selectedPetIDString = pet.id.uuidString
+    }
+    
+    func restoreSelectedPet(from pets: [Pet]) {
+        if selectedPet == nil, !selectedPetIDString.isEmpty {
+            selectedPet = pets.first { $0.id.uuidString == selectedPetIDString }
+        }
+        if selectedPet == nil, let first = pets.first {
+            selectedPet = first
+        }
     }
     
     func getTodayActivities(for pet: Pet) -> [Activity] {

@@ -2,124 +2,182 @@
 //  InsightsView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
 import SwiftData
+import Charts
 
 struct InsightsView: View {
     @EnvironmentObject private var petStore: PetStore
     @Query private var pets: [Pet]
+    @Query private var settings: [AppSettings]
     @State private var selectedMonth = Date()
-    @State private var viewMode: InsightViewMode = .month // month or week
+    @State private var viewMode: InsightViewMode = .calendar
+    @State private var showingProSheet = false
     
     enum InsightViewMode: String, CaseIterable {
-        case month = "月视图"
-        case week = "周视图"
+        case calendar = "Calendar"
+        case week = "Week"
+        case month = "Month"
+        
+        var displayName: String {
+            NSLocalizedString(rawValue, comment: "Insight view mode")
+        }
+    }
+    
+    private var currentSettings: AppSettings {
+        settings.first ?? AppSettings()
+    }
+    
+    private var isPro: Bool {
+        IAPManager.shared.isPro || currentSettings.isPro
     }
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Pet Selector (if multiple pets)
-                    if pets.count > 1 {
-                        PetSelectorView(pets: pets)
-                    }
-                    
-                    if let selectedPet = petStore.selectedPet {
-                        // View Mode Toggle (NEW - matching design)
-                        InsightViewModeToggle(selectedMode: $viewMode, selectedMonth: $selectedMonth)
-                        
-                        if viewMode == .month {
-                            // Calendar View
-                            ActivityCalendarView(pet: selectedPet, month: selectedMonth)
-                            
-                            // Monthly Summary
-                            MonthlySummaryView(pet: selectedPet, month: selectedMonth)
-                        } else {
-                            // Weekly Overview
-                            WeeklyOverviewView(pet: selectedPet)
+            ZStack {
+                PRWarmBackground().ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: PawRoutineTheme.Spacing.xl) {
+                        if pets.count > 1 {
+                            PetSelectorView(pets: pets)
                         }
                         
-                        // Weekly Statistics (with bar chart style)
-                        WeeklyStatsBarChartView(pet: selectedPet)
+                        if let selectedPet = petStore.selectedPet {
+                            InsightViewModeToggle(
+                                selectedMode: $viewMode,
+                                selectedMonth: $selectedMonth,
+                                isPro: isPro,
+                                onProRequired: { showingProSheet = true }
+                            )
+                            
+                            switch viewMode {
+                            case .calendar:
+                                ActivityCalendarView(pet: selectedPet, month: selectedMonth)
+                                WeeklyStatsBarChartView(pet: selectedPet)
+                                ActivityDistributionView(pet: selectedPet)
+                            case .week:
+                                WeeklyOverviewView(pet: selectedPet)
+                                WeeklyStatsBarChartView(pet: selectedPet)
+                                HabitAnalysisView(pet: selectedPet)
+                                DefecationAnalysisView(pet: selectedPet)
+                            case .month:
+                                if isPro {
+                                    MonthlySummaryView(pet: selectedPet, month: selectedMonth)
+                                    ActivityDistributionView(pet: selectedPet)
+                                } else {
+                                    ProRequiredCard(onTap: { showingProSheet = true })
+                                    ActivityDistributionView(pet: selectedPet)
+                                }
+                            }
+                        } else if pets.isEmpty {
+                            EmptyInsightsView()
+                        }
                         
-                        // Habit Analysis (NEW - bar chart for walking duration etc.)
-                        HabitAnalysisView(pet: selectedPet)
-                        
-                        // Defecation Analysis (NEW)
-                        DefecationAnalysisView(pet: selectedPet)
-                        
-                        // Activity Distribution
-                        ActivityDistributionView(pet: selectedPet)
-                    } else if pets.isEmpty {
-                        EmptyInsightsView()
+                        Spacer(minLength: 100)
                     }
-                    
-                    Spacer(minLength: 100)
+                    .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                    .padding(.top, PawRoutineTheme.Spacing.sm)
                 }
-                .padding()
             }
-            .navigationTitle("统计与回顾")
+            .navigationTitle("Statistics & Review")
             .navigationBarTitleDisplayMode(.large)
+            .sheet(isPresented: $showingProSheet) {
+                ProUpgradeView(settings: currentSettings)
+            }
         }
     }
 }
 
 // MARK: - View Mode Toggle
+
 struct InsightViewModeToggle: View {
     @Binding var selectedMode: InsightsView.InsightViewMode
     @Binding var selectedMonth: Date
+    var isPro: Bool
+    var onProRequired: () -> Void
     
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(InsightsView.InsightViewMode.allCases, id: \.self) { mode in
-                Button(action: { withAnimation(.easeInOut(duration: 0.2)) { selectedMode = mode } }) {
-                    Text(mode.rawValue)
-                        .font(.subheadline)
-                        .fontWeight(selectedMode == mode ? .semibold : .regular)
-                        .foregroundColor(selectedMode == mode ? .white : .primary)
+        VStack(spacing: PawRoutineTheme.Spacing.md) {
+            HStack(spacing: 4) {
+                ForEach(InsightsView.InsightViewMode.allCases, id: \.self) { mode in
+                    let isLocked = mode == .month && !isPro
+                    Button(action: {
+                        if isLocked {
+                            onProRequired()
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedMode = mode
+                            }
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            if isLocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 9))
+                            }
+                            Text(mode.displayName)
+                                .font(PawRoutineTheme.PRFont.caption(.semibold))
+                        }
+                        .foregroundColor(selectedMode == mode ? .white : (isLocked ? PawRoutineTheme.Colors.textTertiary : PawRoutineTheme.Colors.textSecondary))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(
-                            selectedMode == mode ? AnyShapeStyle(.blue) : AnyShapeStyle(.clear),
-                            in: RoundedRectangle(cornerRadius: 8)
+                            selectedMode == mode
+                            ? AnyShapeStyle(PawRoutineTheme.Colors.primary)
+                            : AnyShapeStyle(Color.clear),
+                            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.sm, style: .continuous)
                         )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(4)
+            .background(PawRoutineTheme.Colors.bgCard)
+            .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md, style: .continuous))
+            .shadow(
+                color: PawRoutineTheme.Shadows.small.color,
+                radius: PawRoutineTheme.Shadows.small.radius,
+                x: PawRoutineTheme.Shadows.small.x,
+                y: PawRoutineTheme.Shadows.small.y
+            )
+            
+            if selectedMode != .week {
+                HStack {
+                    Button(action: { changeMonth(-1) }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.primary)
+                            .frame(width: 32, height: 32)
+                            .background(PawRoutineTheme.Colors.bgCard)
+                            .clipShape(Circle())
+                    }
+                    
+                    Spacer()
+                    
+                    Text(monthFormatter.string(from: selectedMonth))
+                        .font(PawRoutineTheme.PRFont.bodyText(.semibold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Button(action: { changeMonth(1) }) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.primary)
+                            .frame(width: 32, height: 32)
+                            .background(PawRoutineTheme.Colors.bgCard)
+                            .clipShape(Circle())
+                    }
+                }
             }
         }
-        .padding(4)
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 10))
-        
-        // Month navigation
-        HStack {
-            Button(action: { changeMonth(-1) }) {
-                Image(systemName: "chevron.left")
-                    .foregroundColor(.blue)
-            }
-            
-            Spacer()
-            
-            Text(monthFormatter.string(from: selectedMonth))
-                .font(.subheadline)
-                .fontWeight(.medium)
-            
-            Spacer()
-            
-            Button(action: { changeMonth(1) }) {
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.blue)
-            }
-        }
-        .padding(.horizontal)
     }
     
     private var monthFormatter: DateFormatter {
         let f = DateFormatter()
-        f.dateFormat = "yyyy年M月"
+        f.dateFormat = NSLocalizedString("yyyy年M月", comment: "")
         return f
     }
     
@@ -130,7 +188,8 @@ struct InsightViewModeToggle: View {
     }
 }
 
-// MARK: - Weekly Overview View
+// MARK: - Weekly Overview
+
 struct WeeklyOverviewView: View {
     let pet: Pet
     
@@ -140,63 +199,52 @@ struct WeeklyOverviewView: View {
         return (0..<7).compactMap { offset in
             guard let date = calendar.date(byAdding: .day, value: -(6 - offset), to: today) else { return nil }
             let daySymbol = calendar.component(.weekday, from: date)
-            let dayNames = ["日", "一", "二", "三", "四", "五", "六"]
+            let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
             let count = pet.activities.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }.count
-            return ("\(dayNames[daySymbol - 1])", count)
+            return (dayNames[daySymbol - 1], count)
         }
     }
     
     private var maxCount: Int {
-        weekDays.map(\.1).max() ?? 1
+        max(weekDays.map(\.1).max() ?? 1, 1)
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("本周概览")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            HStack(alignment: .bottom, spacing: 8) {
-                ForEach(weekDays, id: \.0) { day, count in
-                    VStack(spacing: 6) {
-                        ZStack(alignment: .bottom) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.blue.opacity(0.15))
-                                .frame(height: 80)
-                            
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [.blue, .blue.opacity(0.6)]),
-                                        startPoint: .bottom,
-                                        endPoint: .top
-                                    )
-                                )
-                                .frame(height: max(4, CGFloat(count) / CGFloat(maxCount) * 76))
-                            
-                            Text("\(count)")
-                                .font(.caption2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(count > 0 ? .white : .secondary)
-                                .offset(y: count > 0 ? -14 : 0)
-                        }
-                        .frame(width: 32, height: 80)
-                        
-                        Text(day)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                Text("Weekly Overview")
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Spacer(minLength: 0)
+                HStack(alignment: .bottom, spacing: 8) {
+                    ForEach(weekDays, id: \.0) { day, count in
+                        VStack(spacing: 6) {
+                            ZStack(alignment: .bottom) {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(PawRoutineTheme.Colors.primary.opacity(0.1))
+                                    .frame(height: 100)
+                                
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(PawRoutineTheme.Colors.primary)
+                                    .frame(height: max(4, CGFloat(count) / CGFloat(maxCount) * 96))
+                            }
+                            .frame(width: 36, height: 100)
+                            
+                            Text(day)
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        }
+                    }
+                    
+                    Spacer(minLength: 0)
+                }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
-// MARK: - Activity Calendar View (updated styling)
+// MARK: - Activity Calendar
+
 struct ActivityCalendarView: View {
     let pet: Pet
     let month: Date
@@ -204,14 +252,13 @@ struct ActivityCalendarView: View {
     private var calendar: Calendar { Calendar.current }
     private var monthFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年M月"
+        formatter.dateFormat = NSLocalizedString("yyyy年M月", comment: "")
         return formatter
     }
     
     private var daysInMonth: [Date] {
         guard let range = calendar.range(of: .day, in: .month, for: month) else { return [] }
         let startOfMonth = calendar.dateInterval(of: .month, for: month)?.start ?? month
-        
         return range.compactMap { day in
             calendar.date(byAdding: .day, value: day - 1, to: startOfMonth)
         }
@@ -220,72 +267,60 @@ struct ActivityCalendarView: View {
     private func hasActivity(on date: Date) -> Bool {
         let startOfDay = calendar.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
-        
-        return pet.activities.contains { activity in
-            activity.timestamp >= startOfDay && activity.timestamp < endOfDay
-        }
+        return pet.activities.contains { $0.timestamp >= startOfDay && $0.timestamp < endOfDay }
     }
     
     private func activityCount(on date: Date) -> Int {
         let startOfDay = calendar.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
-        
-        return pet.activities.filter { activity in
-            activity.timestamp >= startOfDay && activity.timestamp < endOfDay
-        }.count
+        return pet.activities.filter { $0.timestamp >= startOfDay && $0.timestamp < endOfDay }.count
     }
     
-    // Calculate weekday of first day for offset
     private var firstDayOffset: Int {
         guard let firstDay = daysInMonth.first else { return 0 }
-        return calendar.component(.weekday, from: firstDay) - 1 // 0=Sun, 6=Sat
+        return calendar.component(.weekday, from: firstDay) - 1
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("活动日历")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Text(monthFormatter.string(from: month))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Weekday headers
-            HStack {
-                ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { day in
-                    Text(day)
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            
-            // Calendar grid with proper alignment
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-            LazyVGrid(columns: columns, spacing: 4) {
-                // Empty cells for offset
-                ForEach(0..<firstDayOffset, id: \.self) { _ in
-                    Color.clear
-                        .frame(width: 32, height: 32)
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                HStack {
+                    Text("Activity Calendar")
+                        .font(PawRoutineTheme.PRFont.title3(.bold))
+                    
+                    Spacer()
+                    
+                    Text(monthFormatter.string(from: month))
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                 }
                 
-                // Actual days
-                ForEach(daysInMonth, id: \.self) { date in
-                    CalendarDayView(
-                        date: date,
-                        hasActivity: hasActivity(on: date),
-                        activityCount: activityCount(on: date)
-                    )
+                HStack {
+                    let weekDaySymbols = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                    ForEach(weekDaySymbols.indices, id: \.self) { i in
+                        Text(LocalizedStringKey(weekDaySymbols[i]))
+                            .font(PawRoutineTheme.PRFont.caption2(.medium))
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                
+                let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(0..<firstDayOffset, id: \.self) { _ in
+                        Color.clear.frame(width: 36, height: 36)
+                    }
+                    
+                    ForEach(daysInMonth, id: \.self) { date in
+                        CalendarDayView(
+                            date: date,
+                            hasActivity: hasActivity(on: date),
+                            activityCount: activityCount(on: date)
+                        )
+                    }
                 }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -305,38 +340,39 @@ struct CalendarDayView: View {
     }
     
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 2) {
             Text(dayFormatter.string(from: date))
-                .font(.caption2)
-                .fontWeight(isToday || hasActivity ? .bold : .regular)
-                .foregroundColor(hasActivity ? .white : (isToday ? .blue : .primary))
+                .font(PawRoutineTheme.PRFont.caption2(.bold))
+                .foregroundColor(isToday ? .white : (hasActivity ? .white : PawRoutineTheme.Colors.textPrimary))
             
             if hasActivity && activityCount > 0 {
                 Circle()
-                    .fill(isToday ? Color.blue : Color.white.opacity(0.9))
-                    .frame(width: 5, height: 5)
+                    .fill(isToday ? Color.white.opacity(0.9) : Color.white.opacity(0.7))
+                    .frame(width: 4, height: 4)
             }
         }
-        .frame(width: 32, height: 32)
+        .frame(width: 36, height: 36)
         .background(
             Circle()
-                .fill(hasActivity ? (isToday ? Color.blue.opacity(0.8) : Color.blue) : (isToday ? Color.blue.opacity(0.15) : .clear))
+                .fill(hasActivity
+                      ? (isToday ? PawRoutineTheme.Colors.primary.opacity(0.85) : PawRoutineTheme.Colors.primary)
+                      : (isToday ? PawRoutineTheme.Colors.primary.opacity(0.15) : Color.clear))
         )
         .overlay(
             Circle()
-                .stroke(isToday && !hasActivity ? Color.blue : .clear, lineWidth: 1)
+                .stroke(isToday && !hasActivity ? PawRoutineTheme.Colors.primary : Color.clear, lineWidth: 1.5)
         )
     }
 }
 
-// MARK: - Weekly Stats Bar Chart View (NEW - matching design)
+// MARK: - Weekly Stats Bar Chart
+
 struct WeeklyStatsBarChartView: View {
     let pet: Pet
     
     private var weeklyData: [(ActivityType, Int)] {
         let calendar = Calendar.current
         let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date()
-        
         let weekActivities = pet.activities.filter { $0.timestamp >= weekAgo }
         
         return ActivityType.allCases.map { type in
@@ -345,169 +381,118 @@ struct WeeklyStatsBarChartView: View {
         }
     }
     
-    private var totalActivities: Int {
-        weeklyData.map(\.1).reduce(0, +)
-    }
-    
     private var maxCount: Int {
         max(weeklyData.map(\.1).max() ?? 1, 1)
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("本周习惯分析")
-                    .font(.headline)
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                HStack {
+                    Text("Weekly Habit Analysis")
+                        .font(PawRoutineTheme.PRFont.title3(.bold))
+                    
+                    Spacer()
+                }
                 
-                Spacer()
-                
-                Text("7月9日-7月15日")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Bar chart
-            HStack(alignment: .bottom, spacing: 12) {
-                ForEach(weeklyData, id: \.0) { type, count in
-                    VStack(spacing: 8) {
-                        // Bar
-                        ZStack(alignment: .top) {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(barColor(for: type).opacity(0.15))
-                                .frame(width: 36, height: 120)
+                HStack(alignment: .bottom, spacing: 10) {
+                    ForEach(weeklyData.filter { $0.1 > 0 }, id: \.0) { type, count in
+                        VStack(spacing: 6) {
+                            Text("\(count)")
+                                .font(PawRoutineTheme.PRFont.caption2(.bold))
+                                .foregroundStyle(barColor(for: type))
                             
-                            VStack(spacing: 0) {
-                                Spacer(minLength: 0)
+                            ZStack(alignment: .bottom) {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(barColor(for: type).opacity(0.12))
+                                    .frame(width: 32, height: 100)
                                 
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [barColor(for: type), barColor(for: type).opacity(0.7)]),
-                                            startPoint: .bottom,
-                                            endPoint: .top
-                                        )
-                                    )
-                                    .frame(width: 36, height: max(4, CGFloat(count) / CGFloat(maxCount) * 116))
-                                
-                                // Count label on top
-                                if count > 0 {
-                                    Text("\(count)")
-                                        .font(.caption2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(barColor(for: type))
-                                        .padding(.top, 4)
-                                }
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(barColor(for: type))
+                                    .frame(width: 32, height: max(4, CGFloat(count) / CGFloat(maxCount) * 96))
                             }
-                        }
-                        .frame(height: 120)
-                        
-                        // Icon + Label
-                        VStack(spacing: 2) {
-                            Text(type.icon)
-                                .font(.title3)
+                            .frame(height: 100)
                             
-                            Text(type.rawValue)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                            Text(type.displayName)
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
+                    
+                    Spacer(minLength: 0)
                 }
             }
-            
-            // Summary row
-            HStack {
-                Image(systemName: "figure.walk")
-                    .font(.caption)
-                    .foregroundColor(.green)
-                
-                Text("遛狗时长")
-                    .font(.caption)
-                
-                Spacer()
-                
-                Text("4 小时 30 分钟")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.green)
-            }
-            .padding()
-            .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func barColor(for type: ActivityType) -> Color {
         switch type {
-        case .feeding: return .orange
-        case .waterChange: return .blue
-        case .walking: return .green
+        case .feeding: return PawRoutineTheme.Colors.feeding
+        case .waterChange: return PawRoutineTheme.Colors.water
+        case .walking: return PawRoutineTheme.Colors.walking
         case .medication: return .purple
-        case .defecation: return .brown
+        case .defecation: return PawRoutineTheme.Colors.bathroom
         case .other: return .gray
         }
     }
 }
 
-// MARK: - NEW: Habit Analysis View (detailed bar chart)
+// MARK: - Habit Analysis
+
 struct HabitAnalysisView: View {
     let pet: Pet
-    
-    private var thisWeekWalkingCount: Int {
-        let calendar = Calendar.current
-        let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date()
-        return pet.activities.filter { $0.type == .walking && $0.timestamp >= weekAgo }.count
-    }
     
     private var dailyWalkingData: [(String, Int)] {
         let calendar = Calendar.current
         let today = Date()
         return (0..<7).reversed().compactMap { offset in
             guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
-            let dayLabel = calendar.isDateInToday(date) ? "今天" :
-                           calendar.date(byAdding: .day, value: -1, to: today).map { calendar.isDate(date, inSameDayAs: $0) } == true ? "昨天" :
-                           "\(calendar.component(.day, from: date))"
+            let dayLabel: String
+            if calendar.isDateInToday(date) {
+                dayLabel = NSLocalizedString("Today", comment: "")
+            } else if calendar.isDateInYesterday(date) {
+                dayLabel = NSLocalizedString("Yesterday", comment: "")
+            } else {
+                dayLabel = String(format: NSLocalizedString("%d日", comment: ""), calendar.component(.day, from: date))
+            }
             let count = pet.activities.filter { $0.type == .walking && calendar.isDate($0.timestamp, inSameDayAs: date) }.count
             return (dayLabel, count)
         }
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("习惯养成次数")
-                    .font(.headline)
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                Text("Habit Count")
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Spacer()
-            }
-            
-            HStack(alignment: .lastTextBaseline, spacing: 8) {
-                ForEach(dailyWalkingData, id: \.0) { day, count in
-                    VStack(spacing: 6) {
-                        Text("\(count)")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(count > 0 ? Color.green : Color.gray.opacity(0.2))
-                            .frame(width: 28, height: CGFloat(max(count * 20, 4)))
-                        
-                        Text(day)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                HStack(alignment: .lastTextBaseline, spacing: 10) {
+                    ForEach(dailyWalkingData, id: \.0) { day, count in
+                        VStack(spacing: 6) {
+                            Text("\(count)")
+                                .font(PawRoutineTheme.PRFont.caption2(.bold))
+                                .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                            
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(count > 0 ? PawRoutineTheme.Colors.walking : PawRoutineTheme.Colors.separator)
+                                .frame(width: 28, height: CGFloat(max(count * 16, 4)))
+                            
+                            Text(day)
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        }
                     }
+                    
+                    Spacer(minLength: 0)
                 }
-                
-                Spacer(minLength: 0)
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
-// MARK: - NEW: Defecation Analysis View
+// MARK: - Defecation Analysis
+
 struct DefecationAnalysisView: View {
     let pet: Pet
     
@@ -518,7 +503,6 @@ struct DefecationAnalysisView: View {
             .sorted { $0.timestamp > $1.timestamp }
     }
     
-    /// Detect abnormal defecation based on notes containing keywords like 拉稀, 腹泻, 异常, etc.
     private var abnormalCount: Int {
         defecationRecordsThisWeek.filter { record in
             guard let notes = record.notes?.lowercased() else { return false }
@@ -532,150 +516,76 @@ struct DefecationAnalysisView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("排便情况分析")
-                    .font(.headline)
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                Text("Defecation Analysis")
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Spacer()
-            }
-            
-            if !defecationRecordsThisWeek.isEmpty {
-                HStack(spacing: 20) {
-                    // Normal count
-                    VStack(spacing: 6) {
-                        Text("\(normalCount)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                        
-                        Text("正常")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    // Abnormal count
-                    VStack(spacing: 6) {
-                        Text("\(abnormalCount)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(abnormalCount > 0 ? .orange : .gray)
-                        
-                        Text("异常")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Total
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Text("共 \(defecationRecordsThisWeek.count) 次")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("本周")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding()
-                .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-                
-                // Recent records list
                 if !defecationRecordsThisWeek.isEmpty {
-                    LazyVStack(spacing: 8) {
-                        ForEach(defecationRecordsThisWeek.prefix(5)) { record in
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(isAbnormal(record) ? .orange : .green)
-                                    .frame(width: 8, height: 8)
-                                
-                                Text(record.timestamp.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                if let notes = record.notes {
-                                    Text(notes)
-                                        .font(.caption)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .padding(.vertical, 4)
+                    HStack(spacing: 20) {
+                        StatBadge(
+                            value: "\(normalCount)",
+                            label: "Normal",
+                            color: PawRoutineTheme.Colors.walking
+                        )
+                        
+                        StatBadge(
+                            value: "\(abnormalCount)",
+                            label: "Abnormal",
+                            color: abnormalCount > 0 ? PawRoutineTheme.Colors.feeding : PawRoutineTheme.Colors.textTertiary
+                        )
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text(String(format: NSLocalizedString("共 %d 次", comment: ""), defecationRecordsThisWeek.count))
+                                .font(PawRoutineTheme.PRFont.caption(.medium))
+                                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                            Text("This Week")
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
+                    .padding()
+                    .background(PawRoutineTheme.Colors.bgSecondary.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md, style: .continuous))
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.3))
+                        Text("No defecation records this week")
+                            .font(PawRoutineTheme.PRFont.bodyText())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
                 }
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "circle.fill")
-                        .font(.title)
-                        .foregroundColor(.gray.opacity(0.4))
-                    Text("本周暂无排便记录")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.vertical, 12)
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-    }
-    
-    private func isAbnormal(_ activity: Activity) -> Bool {
-        guard let notes = activity.notes?.lowercased() else { return false }
-        let abnormalKeywords = ["拉稀", "腹泻", "异常", "血", "软便", "便秘"]
-        return abnormalKeywords.contains { notes.contains($0.lowercased()) }
     }
 }
 
-// MARK: - Weekly Stats View (original, kept as fallback)
-struct WeeklyStatsView: View {
-    let pet: Pet
-    
-    private var weeklyData: [(ActivityType, Int)] {
-        let calendar = Calendar.current
-        let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date()
-        
-        let weekActivities = pet.activities.filter { $0.timestamp >= weekAgo }
-        
-        return ActivityType.allCases.map { type in
-            let count = weekActivities.filter { $0.type == type }.count
-            return (type, count)
-        }
-    }
+struct StatBadge: View {
+    let value: LocalizedStringKey
+    let label: LocalizedStringKey
+    let color: Color
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("本周统计")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            ForEach(weeklyData, id: \.0) { type, count in
-                HStack {
-                    Text(type.icon)
-                        .font(.title3)
-                    
-                    Text(type.rawValue)
-                        .font(.body)
-                    
-                    Spacer()
-                    
-                    Text("\(count)次")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                }
-                .padding(.vertical, 4)
-            }
+        VStack(spacing: 4) {
+            Text(value)
+                .font(PawRoutineTheme.PRFont.title2(.bold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(PawRoutineTheme.PRFont.caption())
+                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
-// MARK: - Activity Distribution View
+// MARK: - Activity Distribution
+
 struct ActivityDistributionView: View {
     let pet: Pet
     
@@ -687,84 +597,129 @@ struct ActivityDistributionView: View {
     }
     
     private var maxCount: Int {
-        distributionData.map(\.1).max() ?? 1
+        max(distributionData.map(\.1).max() ?? 1, 1)
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("活动分布")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            ForEach(distributionData, id: \.0) { type, count in
-                HStack {
-                    Text(type.icon)
-                        .font(.body)
-                    
-                    Text(type.rawValue)
-                        .font(.subheadline)
-                        .frame(width: 60, alignment: .leading)
-                    
-                    // Progress bar
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            Rectangle()
-                                .fill(.quaternary)
-                                .frame(height: 8)
-                                .cornerRadius(4)
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                Text("Activity Distribution")
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                VStack(spacing: 12) {
+                    ForEach(distributionData.filter { $0.1 > 0 }, id: \.0) { type, count in
+                        HStack(spacing: 10) {
+                            ActivityTypeIcon(type: type, size: 16)
                             
-                            Rectangle()
-                                .fill(barColor(for: type))
-                                .frame(
-                                    width: geometry.size.width * (Double(count) / Double(maxCount)),
-                                    height: 8
-                                )
-                                .cornerRadius(4)
+                            Text(type.displayName)
+                                .font(PawRoutineTheme.PRFont.caption(.medium))
+                                .frame(width: 50, alignment: .leading)
+                            
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .fill(PawRoutineTheme.Colors.bgSecondary)
+                                        .frame(height: 8)
+                                    
+                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .fill(barColor(for: type))
+                                        .frame(
+                                            width: geometry.size.width * (Double(count) / Double(maxCount)),
+                                            height: 8
+                                        )
+                                }
+                            }
+                            .frame(height: 8)
+                            
+                            Text("\(count)")
+                                .font(PawRoutineTheme.PRFont.caption(.bold))
+                                .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                                .frame(width: 24, alignment: .trailing)
                         }
                     }
-                    .frame(height: 8)
-                    
-                    Text("\(count)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.blue)
-                        .frame(width: 30, alignment: .trailing)
                 }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func barColor(for type: ActivityType) -> Color {
         switch type {
-        case .feeding: return .orange
-        case .waterChange: return .blue
-        case .walking: return .green
+        case .feeding: return PawRoutineTheme.Colors.feeding
+        case .waterChange: return PawRoutineTheme.Colors.water
+        case .walking: return PawRoutineTheme.Colors.walking
         case .medication: return .purple
-        case .defecation: return .brown
+        case .defecation: return PawRoutineTheme.Colors.bathroom
         case .other: return .gray
         }
     }
 }
 
+// MARK: - Pro Required Card
+
+struct ProRequiredCard: View {
+    let onTap: () -> Void
+    
+    var body: some View {
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.md) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(
+                        LinearGradient(colors: [.orange, .pink], startPoint: .leading, endPoint: .trailing)
+                    )
+                
+                Text("Pro Feature")
+                    .font(PawRoutineTheme.PRFont.title3(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                
+                Text("Monthly summaries, trend analysis, and other advanced stats require FurryNote Pro.")
+                    .font(PawRoutineTheme.PRFont.bodyText())
+                    .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                
+                Button(action: onTap) {
+                    Text("Unlock Pro")
+                        .font(PawRoutineTheme.PRFont.bodyText(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            LinearGradient(colors: [.orange, .pink], startPoint: .leading, endPoint: .trailing),
+                            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md, style: .continuous)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.vertical, PawRoutineTheme.Spacing.md)
+        }
+    }
+}
+
+// MARK: - Empty Insights
+
 struct EmptyInsightsView: View {
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PawRoutineTheme.Spacing.xl) {
+            Spacer().frame(height: 60)
+            
             Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .font(.system(size: 64, weight: .light))
+                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.2))
             
-            Text("暂无统计数据")
-                .font(.title2)
-                .fontWeight(.medium)
+            VStack(spacing: PawRoutineTheme.Spacing.sm) {
+                Text("No statistics yet")
+                    .font(PawRoutineTheme.PRFont.title2(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                
+                Text("Add a pet and start recording activities to see detailed statistics here.")
+                    .font(PawRoutineTheme.PRFont.bodyText())
+                    .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, PawRoutineTheme.Spacing.xxl)
+            }
             
-            Text("添加宠物并开始记录活动后，这里会显示详细的统计分析")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            Spacer()
         }
-        .padding(.vertical, 40)
     }
 }

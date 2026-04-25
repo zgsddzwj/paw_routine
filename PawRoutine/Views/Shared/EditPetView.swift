@@ -2,8 +2,6 @@
 //  EditPetView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
 import SwiftData
@@ -12,6 +10,7 @@ import PhotosUI
 struct EditPetView: View {
     let pet: Pet
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     
     @State private var name: String
     @State private var breed: String
@@ -38,98 +37,35 @@ struct EditPetView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Profile Photo Section
-                    VStack(spacing: 16) {
-                        Text("宠物照片")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            ZStack {
+                PRWarmBackground().ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: PawRoutineTheme.Spacing.xl) {
+                        photoSection
+                        basicInfoCard
+                        genderSection
+                        birthDateSection
+                        neuteredSection
                         
-                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                            ZStack {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .frame(width: 120, height: 120)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(.blue, lineWidth: 2)
-                                    )
-                                
-                                if let profileImageData,
-                                   let uiImage = UIImage(data: profileImageData) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 112, height: 112)
-                                        .clipShape(Circle())
-                                } else {
-                                    VStack {
-                                        Image(systemName: "camera.fill")
-                                            .font(.title)
-                                            .foregroundColor(.blue)
-                                        Text("更换照片")
-                                            .font(.caption)
-                                            .foregroundColor(.blue)
-                                    }
-                                }
-                            }
-                        }
+                        Spacer(minLength: 100)
                     }
-                    
-                    // Basic Info Section
-                    VStack(spacing: 16) {
-                        Text("基本信息")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        VStack(spacing: 12) {
-                            TextField("宠物姓名", text: $name)
-                                .textFieldStyle(.roundedBorder)
-                            
-                            TextField("品种", text: $breed)
-                                .textFieldStyle(.roundedBorder)
-                            
-                            Picker("性别", selection: $gender) {
-                                ForEach(Gender.allCases, id: \.self) { gender in
-                                    Text(gender.rawValue).tag(gender)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            
-                            DatePicker(
-                                "出生日期",
-                                selection: $birthDate,
-                                in: ...Date(),
-                                displayedComponents: .date
-                            )
-                            
-                            Toggle("已绝育", isOn: $isNeutered)
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    Spacer()
+                    .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                    .padding(.top, PawRoutineTheme.Spacing.lg)
                 }
-                .padding()
             }
-            .navigationTitle("编辑宠物")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Edit Pet")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
-                        savePet()
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(!canSave)
-                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                saveButton
             }
         }
         .onChange(of: selectedPhoto) { _, newPhoto in
@@ -141,6 +77,232 @@ struct EditPetView: View {
         }
     }
     
+    // MARK: - Photo Section
+    
+    private var photoSection: some View {
+        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+            ZStack {
+                if let profileImageData,
+                   let uiImage = UIImage(data: profileImageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(PawRoutineTheme.Colors.separator, lineWidth: 1)
+                        )
+                } else {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    PawRoutineTheme.Colors.primary.opacity(0.15),
+                                    PawRoutineTheme.Colors.secondary.opacity(0.10)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 120, height: 120)
+                        .overlay(
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 32))
+                                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.5))
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(PawRoutineTheme.Colors.separator, lineWidth: 1)
+                        )
+                }
+                
+                Circle()
+                    .fill(PawRoutineTheme.Colors.primary)
+                    .frame(width: 32, height: 32)
+                    .overlay(
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                    )
+                    .offset(x: 40, y: 40)
+                    .shadow(color: PawRoutineTheme.Colors.primary.opacity(0.3), radius: 4, x: 0, y: 2)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, PawRoutineTheme.Spacing.sm)
+    }
+    
+    // MARK: - Basic Info Card
+    
+    private var basicInfoCard: some View {
+        PRCard(padding: .init(top: 0, leading: 0, bottom: 0, trailing: 0)) {
+            VStack(spacing: 0) {
+                formRow(icon: "textformat", title: "Name") {
+                    TextField("Enter pet name", text: $name)
+                        .font(PawRoutineTheme.PRFont.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                        .multilineTextAlignment(.trailing)
+                }
+                
+                Divider().padding(.leading, 52)
+                
+                formRow(icon: "pawprint", title: "Breed") {
+                    TextField("Enter breed", text: $breed)
+                        .font(PawRoutineTheme.PRFont.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Gender Section
+    
+    private var genderSection: some View {
+        VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
+            Text("Gender")
+                .font(PawRoutineTheme.PRFont.caption(.semibold))
+                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                .padding(.horizontal, PawRoutineTheme.Spacing.md)
+            
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
+                ForEach(Gender.allCases, id: \.self) { g in
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            gender = g
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: g == .male ? "mars" : "venus")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text(g.displayName)
+                                .font(PawRoutineTheme.PRFont.bodyText(.semibold))
+                        }
+                        .foregroundStyle(gender == g ? .white : PawRoutineTheme.Colors.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            gender == g ? PawRoutineTheme.Colors.primary : Color.white,
+                            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous)
+                                .stroke(gender == g ? Color.clear : PawRoutineTheme.Colors.separator, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+    }
+    
+    // MARK: - Birth Date Section
+    
+    private var birthDateSection: some View {
+        PRCard(padding: .init(top: 0, leading: 0, bottom: 0, trailing: 0)) {
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
+                PRIconContainer(icon: "calendar", color: .orange, size: 28)
+                
+                Text("Birth Date")
+                    .font(PawRoutineTheme.PRFont.bodyText())
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                
+                Spacer()
+                
+                DatePicker(
+                    "",
+                    selection: $birthDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+            }
+            .padding(.horizontal, PawRoutineTheme.Spacing.md)
+            .padding(.vertical, 12)
+        }
+    }
+    
+    // MARK: - Neutered Section
+    
+    private var neuteredSection: some View {
+        PRCard(padding: .init(top: 0, leading: 0, bottom: 0, trailing: 0)) {
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
+                PRIconContainer(icon: "checkmark.shield", color: .purple, size: 28)
+                
+                Text("Neutered")
+                    .font(PawRoutineTheme.PRFont.bodyText())
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                
+                Spacer()
+                
+                Toggle("", isOn: $isNeutered)
+                    .labelsHidden()
+                    .tint(PawRoutineTheme.Colors.primary)
+            }
+            .padding(.horizontal, PawRoutineTheme.Spacing.md)
+            .padding(.vertical, 12)
+        }
+    }
+    
+    // MARK: - Save Button
+    
+    private var saveButton: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .background(PawRoutineTheme.Colors.separator)
+            
+            Button {
+                savePet()
+            } label: {
+                HStack {
+                    Spacer()
+                    Text("Save")
+                        .font(PawRoutineTheme.PRFont.bodyText(.semibold))
+                    Spacer()
+                }
+                .foregroundColor(.white)
+                .frame(height: 50)
+                .background(
+                    canSave
+                    ? PawRoutineTheme.Colors.primary
+                    : PawRoutineTheme.Colors.primary.opacity(0.4),
+                    in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous)
+                )
+            }
+            .disabled(!canSave)
+            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+            .padding(.vertical, PawRoutineTheme.Spacing.md)
+        }
+        .background(PRWarmBackground())
+    }
+    
+    // MARK: - Helper
+    
+    private func formRow<Content: View>(
+        icon: String,
+        title: LocalizedStringKey,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: PawRoutineTheme.Spacing.md) {
+            PRIconContainer(icon: icon, color: PawRoutineTheme.Colors.primary, size: 28)
+            
+            Text(title)
+                .font(PawRoutineTheme.PRFont.bodyText())
+                .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+            
+            Spacer()
+            
+            content()
+                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+        }
+        .padding(.horizontal, PawRoutineTheme.Spacing.md)
+        .padding(.vertical, 12)
+    }
+    
+    // MARK: - Save
+    
     private func savePet() {
         pet.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         pet.breed = breed.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -148,6 +310,12 @@ struct EditPetView: View {
         pet.birthDate = birthDate
         pet.isNeutered = isNeutered
         pet.profileImageData = profileImageData
+        
+        try? modelContext.save()
+        
+        // Re-schedule notifications so pet name in alerts stays up to date
+        let settings = (try? modelContext.fetch(FetchDescriptor<AppSettings>()).first) ?? AppSettings()
+        NotificationManager.shared.scheduleDailyReminders(for: pet, settings: settings)
         
         dismiss()
     }

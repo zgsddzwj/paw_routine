@@ -26,24 +26,26 @@ struct AddMedicalRecordView: View {
     @State private var imageData: Data?
     
     var body: some View {
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     // Record Type
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("记录类型")
+                        Text("Record Type")
                             .font(.headline)
                         
-                        Picker("记录类型", selection: $recordType) {
+                        Picker("Record Type", selection: $recordType) {
                             ForEach(MedicalRecordType.allCases, id: \.self) { type in
-                                Label(type.rawValue, systemImage: type.systemImage)
+                                Label(type.displayName, systemImage: type.systemImage)
                                     .tag(type)
                             }
                         }
                         .pickerStyle(.menu)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        TextField("记录名称（如：狂犬疫苗）", text: $title)
+                        TextField("Record name (e.g. Rabies vaccine)", text: $title)
                             .textFieldStyle(.roundedBorder)
                     }
                     .padding()
@@ -51,10 +53,10 @@ struct AddMedicalRecordView: View {
                     
                     // Date Selection
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("记录日期")
+                        Text("Record Date")
                             .font(.headline)
                         
-                        DatePicker("日期", selection: $date, displayedComponents: .date)
+                        DatePicker("Date", selection: $date, displayedComponents: .date)
                             .datePickerStyle(.compact)
                     }
                     .padding()
@@ -62,14 +64,14 @@ struct AddMedicalRecordView: View {
                     
                     // Next Due Date (Optional)
                     VStack(alignment: .leading, spacing: 12) {
-                        Toggle("设置下次提醒", isOn: $hasNextDueDate)
+                        Toggle("Set Next Reminder", isOn: $hasNextDueDate)
                             .font(.headline)
                         
-                        Toggle("开启提醒通知", isOn: $isReminderSet)
+                        Toggle("Enable Reminder Notifications", isOn: $isReminderSet)
                         
                         if hasNextDueDate {
                             DatePicker(
-                                "下次日期",
+                                "Next Due Date",
                                 selection: Binding(
                                     get: { nextDueDate ?? Calendar.current.date(byAdding: .month, value: 1, to: date) ?? Date() },
                                     set: { nextDueDate = $0 }
@@ -84,10 +86,10 @@ struct AddMedicalRecordView: View {
                     
                     // Veterinarian
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("兽医/医院")
+                        Text("Veterinarian/Hospital")
                             .font(.headline)
                         
-                        TextField("可选", text: $veterinarian)
+                        TextField("Optional", text: $veterinarian)
                             .textFieldStyle(.roundedBorder)
                     }
                     .padding()
@@ -95,10 +97,10 @@ struct AddMedicalRecordView: View {
                     
                     // Notes
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("备注")
+                        Text("Notes")
                             .font(.headline)
                         
-                        TextField("添加备注信息...", text: $notes, axis: .vertical)
+                        TextField("Add notes...", text: $notes, axis: .vertical)
                             .textFieldStyle(.roundedBorder)
                             .lineLimit(3...6)
                     }
@@ -108,7 +110,7 @@ struct AddMedicalRecordView: View {
                     // Photo Upload (for certificates)
                     if recordType == .certificate {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("上传照片")
+                            Text("Upload Photo")
                                 .font(.headline)
                             
                             PhotosPicker(selection: $selectedPhoto, matching: .images) {
@@ -124,7 +126,7 @@ struct AddMedicalRecordView: View {
                                             .font(.largeTitle)
                                             .foregroundColor(.blue)
                                         
-                                        Text("点击选择照片")
+                                        Text("Tap to select photo")
                                             .font(.body)
                                             .foregroundColor(.blue)
                                     }
@@ -145,17 +147,17 @@ struct AddMedicalRecordView: View {
                 }
                 .padding()
             }
-            .navigationTitle("添加医疗记录")
+            .navigationTitle("Add Medical Record")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button("Save") {
                         saveRecord()
                     }
                     .fontWeight(.semibold)
@@ -169,11 +171,12 @@ struct AddMedicalRecordView: View {
                 }
             }
         }
+        }
     }
     
     private func saveRecord() {
         let finalTitle = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? recordType.rawValue
+            ? recordType.displayName
             : title.trimmingCharacters(in: .whitespacesAndNewlines)
         
         let record = MedicalRecord(
@@ -207,8 +210,8 @@ struct AddMedicalRecordView: View {
         } else {
             // Generic reminder
             let content = UNMutableNotificationContent()
-            content.title = "宠物医疗提醒"
-            content.body = "\(pet.name) 需要进行 \(record.type.rawValue)"
+            content.title = NSLocalizedString("Pet Medical Reminder", comment: "")
+            content.body = String(format: NSLocalizedString("%@ 需要进行 %@", comment: ""), pet.name, record.type.displayName)
             content.sound = .default
             
             let calendar = Calendar.current
@@ -223,9 +226,9 @@ struct AddMedicalRecordView: View {
             
             UNUserNotificationCenter.current().add(request) { error in
                 if let error = error {
+                    #if DEBUG
                     print("Failed to schedule notification: \(error.localizedDescription)")
-                } else {
-                    print("Scheduled medical reminder for \(pet.name)")
+                    #endif
                 }
             }
         }

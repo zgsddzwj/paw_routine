@@ -33,7 +33,7 @@ final class MedicalRecord {
     ) {
         self.id = id
         self.type = type
-        self.title = title ?? type.rawValue
+        self.title = title ?? type.displayName
         self.date = date
         self.nextDueDate = nextDueDate
         self.veterinarian = veterinarian
@@ -43,14 +43,18 @@ final class MedicalRecord {
 }
 
 enum MedicalRecordType: String, CaseIterable, Codable {
-    case vaccination = "疫苗"
-    case dewormingInternal = "体内驱虫"
-    case dewormingExternal = "体外驱虫"
-    case checkup = "体检"
-    case treatment = "治疗"
-    case certificate = "证件"
-    case surgery = "手术"
-    case other = "其他"
+    case vaccination = "Vaccine"
+    case dewormingInternal = "Internal Deworming"
+    case dewormingExternal = "External Deworming"
+    case checkup = "Checkup"
+    case treatment = "Treatment"
+    case certificate = "Certificate"
+    case surgery = "Surgery"
+    case other = "Other"
+    
+    var displayName: String {
+        NSLocalizedString(rawValue, comment: "Medical record type")
+    }
     
     var systemImage: String {
         switch self {

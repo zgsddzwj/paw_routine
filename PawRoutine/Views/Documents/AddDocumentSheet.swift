@@ -20,29 +20,32 @@ struct AddDocumentSheet: View {
     @State private var imageData: Data?
     
     var body: some View {
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
         NavigationStack {
             Form {
-                Section("照片") { documentPhotoPicker }
+                Section("Photos") { documentPhotoPicker }
                 
-                Section("信息") {
-                    TextField("标题（如：2024年疫苗本）", text: $title)
+                Section("Info") {
+                    TextField("Title (e.g. 2024 Vaccine Book)", text: $title)
                     
-                    Picker("证件类型", selection: $documentType) {
+                    Picker("Document Type", selection: $documentType) {
                         ForEach(DocumentType.allCases) { type in
-                            Label(type.rawValue, systemImage: type.icon).tag(type)
+                            Label(type.displayName, systemImage: type.icon).tag(type)
                         }
                     }
                     .pickerStyle(.menu)
                 }
             }
-            .navigationTitle("添加证件")
+            .scrollContentBackground(.hidden)
+            .navigationTitle("Add Document")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("取消", role: .cancel) { dismiss() }
+                    Button("Cancel", role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("保存") {
+                    Button("Save") {
                         guard !title.trimmingCharacters(in: .whitespaces).isEmpty,
                               imageData != nil else { return }
                         
@@ -69,6 +72,7 @@ struct AddDocumentSheet: View {
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+        }
     }
     
     private var documentPhotoPicker: some View {
@@ -91,7 +95,7 @@ struct AddDocumentSheet: View {
                             Image(systemName: "photo.on.rectangle.angled")
                                 .font(.title)
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
-                            Text("点击选择照片")
+                            Text("Tap to select photo")
                                 .font(PawRoutineTheme.PRFont.bodyText())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
                         }

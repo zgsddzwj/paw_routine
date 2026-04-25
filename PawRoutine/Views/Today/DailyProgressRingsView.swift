@@ -2,26 +2,22 @@
 //  DailyProgressRingsView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
 
 struct DailyProgressRingsView: View {
     let pet: Pet
     @EnvironmentObject private var petStore: PetStore
+    @State private var showingTargetEdit = false
     
-    // Get activity counts for today
+    @State private var feedingTarget = 3
+    @State private var walkingTarget = 2
+    @State private var waterTarget = 1
+    
     private var feedingCount: Int { petStore.getActivityCount(for: pet, type: .feeding) }
     private var walkingCount: Int { petStore.getActivityCount(for: pet, type: .walking) }
     private var waterCount: Int { petStore.getActivityCount(for: pet, type: .waterChange) }
     
-    // Targets
-    private let feedingTarget = 2
-    private let walkingTarget = 2
-    private let waterTarget = 1
-    
-    // Overall completion percentage
     private var overallCompletion: Double {
         let feedingPct = min(Double(feedingCount) / Double(feedingTarget), 1.0)
         let walkingPct = min(Double(walkingCount) / Double(walkingTarget), 1.0)
@@ -30,77 +26,80 @@ struct DailyProgressRingsView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("今日进度")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Text("编辑")
-                    .font(.subheadline)
-                    .foregroundColor(.blue)
-                    .onTapGesture {
-                        // Could open target editing
+        PRCard {
+            VStack(spacing: PawRoutineTheme.Spacing.xl) {
+                // Header
+                HStack {
+                    Text("Today's Progress")
+                        .font(PawRoutineTheme.PRFont.title3(.bold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Button("Edit") {
+                        showingTargetEdit = true
                     }
-            }
-            
-            HStack(spacing: 20) {
-                // Feeding Ring
-                ProgressRingView(
-                    title: "喂食",
-                    current: feedingCount,
-                    target: feedingTarget,
-                    color: .orange,
-                    icon: "🍖"
-                )
+                    .font(PawRoutineTheme.PRFont.caption(.medium))
+                    .foregroundStyle(PawRoutineTheme.Colors.primary)
+                }
                 
-                // Walking Ring
-                ProgressRingView(
-                    title: "遛狗",
-                    current: walkingCount,
-                    target: walkingTarget,
-                    color: .green,
-                    icon: "🦮"
-                )
+                // Progress Rings
+                HStack(spacing: PawRoutineTheme.Spacing.xxl) {
+                    ProgressRingView(
+                        title: "Walking",
+                        current: walkingCount,
+                        target: walkingTarget,
+                        color: PawRoutineTheme.Colors.walking
+                    )
+                    
+                    ProgressRingView(
+                        title: "Feeding",
+                        current: feedingCount,
+                        target: feedingTarget,
+                        color: PawRoutineTheme.Colors.feeding
+                    )
+                    
+                    ProgressRingView(
+                        title: "Water Change",
+                        current: waterCount,
+                        target: waterTarget,
+                        color: PawRoutineTheme.Colors.water
+                    )
+                }
+                .frame(maxWidth: .infinity)
                 
-                // Water Ring
-                ProgressRingView(
-                    title: "换水",
-                    current: waterCount,
-                    target: waterTarget,
-                    color: .blue,
-                    icon: "💧"
-                )
-            }
-            
-            // Completion summary text (NEW - matching design)
-            HStack(spacing: 8) {
-                Image(systemName: "flame.fill")
-                    .foregroundColor(.orange)
-                    .font(.caption)
-                
-                Text("目标已完成 \(Int(overallCompletion))%")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-                
-                Text("🎉")
-                    .font(.caption)
+                // Completion summary
+                HStack(spacing: 6) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(PawRoutineTheme.Colors.feeding)
+                    
+                    Text(String(format: NSLocalizedString("目标已完成 %d%%", comment: ""), Int(overallCompletion)))
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    
+                    if overallCompletion >= 100 {
+                        Text("🎉")
+                            .font(.system(size: 14))
+                    }
+                }
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .sheet(isPresented: $showingTargetEdit) {
+            TargetEditView(
+                feedingTarget: $feedingTarget,
+                walkingTarget: $walkingTarget,
+                waterTarget: $waterTarget
+            )
+        }
     }
 }
 
 struct ProgressRingView: View {
-    let title: String
+    let title: LocalizedStringKey
     let current: Int
     let target: Int
     let color: Color
-    let icon: String
     
     private var progress: Double {
         guard target > 0 else { return 0 }
@@ -112,52 +111,35 @@ struct ProgressRingView: View {
     }
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             ZStack {
-                // Background ring
                 Circle()
-                    .stroke(color.opacity(0.15), lineWidth: 8)
-                    .frame(width: 70, height: 70)
+                    .stroke(color.opacity(0.12), lineWidth: 10)
+                    .frame(width: 90, height: 90)
                 
-                // Progress ring
                 Circle()
                     .trim(from: 0, to: progress)
-                    .stroke(
-                        AngularGradient(
-                            gradient: Gradient(colors: [color.opacity(0.6), color]),
-                            center: .center,
-                            startAngle: .degrees(-90),
-                            endAngle: .degrees(270)
-                        ),
-                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                    )
-                    .frame(width: 70, height: 70)
+                    .stroke(color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .frame(width: 90, height: 90)
                     .rotationEffect(.degrees(-90))
                     .animation(.easeInOut(duration: 0.8), value: progress)
                 
-                // Center content - count or checkmark
                 if isComplete {
                     Image(systemName: "checkmark")
-                        .font(.title3)
-                        .fontWeight(.bold)
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundColor(color)
                 } else {
-                    VStack(spacing: 0) {
-                        Text(icon)
-                            .font(.title3)
-                        
+                    VStack(spacing: 2) {
                         Text("\(current)/\(target)")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                     }
                 }
             }
             
-            VStack(spacing: 2) {
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-            }
+            Text(title)
+                .font(PawRoutineTheme.PRFont.caption(.medium))
+                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
         }
     }
 }

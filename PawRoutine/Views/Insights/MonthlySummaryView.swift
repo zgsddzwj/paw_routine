@@ -53,7 +53,7 @@ struct MonthlySummaryView: View {
     var body: some View {
         PRCard {
             VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
-                PRSectionHeader("月度汇总")
+                PRSectionHeader("Monthly Summary")
                 
                 // 活跃度环形进度 + 统计数字
                 HStack(spacing: PawRoutineTheme.Spacing.xl) {
@@ -80,33 +80,33 @@ struct MonthlySummaryView: View {
                         VStack(spacing: 2) {
                             Text("\(Int(activityRate * 100))%")
                                 .font(PawRoutineTheme.PRFont.title3(.bold))
-                            Text("活跃度")
+                            Text("Activity Rate")
                                 .font(PawRoutineTheme.PRFont.micro())
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        summaryRow(label: "总记录", value: "\(totalRecords)", icon: "list.bullet.rectangle.fill")
-                        summaryRow(label: "活跃天数", value: "\(activeDays)/\(min(daysInMonth, calendar.component(.day, from: Date())))", icon: "calendar.badge.checkmark")
-                        summaryRow(label: "喂食次数", value: "\(feedingCount)", icon: "fork.knife")
-                        summaryRow(label: "遛狗次数", value: "\(walkingCount)", icon: "figure.walk")
+                        summaryRow(label: "Total Records", value: "\(totalRecords)", icon: "list.bullet.rectangle.fill")
+                        summaryRow(label: "Active Days", value: "\(activeDays)/\(min(daysInMonth, calendar.component(.day, from: Date())))", icon: "calendar.badge.checkmark")
+                        summaryRow(label: "Feeding Times", value: "\(feedingCount)", icon: "fork.knife")
+                        summaryRow(label: "Walking Times", value: "\(walkingCount)", icon: "figure.walk")
                     }
                 }
                 
                 // 成就提示
                 if totalRecords > 50 {
-                    achievementBadge(text: "🏆 超级铲屎官！本月已记录 \(totalRecords) 条")
+                    achievementBadge(text: "🏆 Super Pet Parent! \(totalRecords) records this month")
                 } else if totalRecords > 20 {
-                    achievementBadge(text: "⭐ 很棒！继续保持！")
+                    achievementBadge(text: "⭐ Great job! Keep it up!")
                 } else if totalRecords > 0 {
-                    achievementBadge(text: "💪 每一次记录都是对\(pet.name)的爱")
+                    achievementBadge(text: "💪 Every record is love for \(pet.name)")
                 }
             }
         }
     }
     
-    private func summaryRow(label: String, value: String, icon: String) -> some View {
+    private func summaryRow(label: LocalizedStringKey, value: String, icon: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.caption)
@@ -118,13 +118,13 @@ struct MonthlySummaryView: View {
             
             Spacer()
             
-            Text(value)
+            Text(LocalizedStringKey(value))
                 .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                 .monospacedDigit()
         }
     }
     
-    private func achievementBadge(text: String) -> some View {
+    private func achievementBadge(text: LocalizedStringKey) -> some View {
         HStack(spacing: 6) {
             Text(text)
                 .font(PawRoutineTheme.PRFont.bodyText(.medium))

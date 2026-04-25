@@ -2,8 +2,6 @@
 //  PetDetailView.swift
 //  PawRoutine
 //
-//  宠物档案详情 - 还原设计稿（入口列表式）
-//
 
 import SwiftUI
 import SwiftData
@@ -11,40 +9,63 @@ import SwiftData
 struct PetDetailView: View {
     let pet: Pet
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var petStore: PetStore
     @State private var showEditSheet = false
+    @State private var showingDeleteAlert = false
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: PawRoutineTheme.Spacing.lg) {
-                // MARK: - 头部信息卡片
-                profileHeader
-                
-                // MARK: - 年龄卡片
-                ageCard
-                
-                // MARK: - 功能入口列表
-                functionMenu
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: PawRoutineTheme.Spacing.xl) {
+                    profileHeader
+                    ageCard
+                    functionMenu
+                    
+                    Button(role: .destructive) {
+                        showingDeleteAlert = true
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "trash")
+                            Text("Delete Pet Profile")
+                            Spacer()
+                        }
+                        .font(PawRoutineTheme.PRFont.bodyText(.medium))
+                        .foregroundStyle(.red)
+                        .padding(.vertical, 14)
+                    }
+                    .background(Color.red.opacity(0.06), in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.lg, style: .continuous))
+                    .padding(.top, PawRoutineTheme.Spacing.lg)
+                }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                .padding(.bottom, PawRoutineTheme.Spacing.xxxl)
             }
-            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
-        .navigationTitle("宠物档案")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("Pet Profile")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showEditSheet) {
             EditPetView(pet: pet)
+        }
+        .alert("Confirm Delete", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deletePet()
+            }
+        } message: {
+            Text(String(format: NSLocalizedString("将删除 %@ 的所有数据，此操作无法撤销。", comment: ""), pet.name))
         }
     }
     
     // MARK: - Profile Header
     
     private var profileHeader: some View {
-        PRCard(padding: .init(top: 20, leading: 16, bottom: 16, trailing: 16)) {
+        PRCard {
             HStack(spacing: PawRoutineTheme.Spacing.lg) {
-                // 头像
                 petAvatar
                 
-                // 基本信息
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Text(pet.name)
@@ -52,8 +73,10 @@ struct PetDetailView: View {
                         
                         Button { showEditSheet = true } label: {
                             Image(systemName: "pencil")
-                                .font(.caption2)
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                                .padding(6)
+                                .background(Circle().fill(PawRoutineTheme.Colors.bgSecondary))
                         }
                     }
                     
@@ -68,15 +91,14 @@ struct PetDetailView: View {
                             .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         
-                        Text(pet.gender.rawValue)
+                        Text(pet.gender.displayName)
                             .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     }
                     
-                    // 绝育标签
                     if pet.isNeutered {
-                        Text("已绝育")
-                            .font(PawRoutineTheme.PRFont.caption2(.medium))
+                        Text("Neutered")
+                            .font(PawRoutineTheme.PRFont.caption2(.semibold))
                             .foregroundStyle(PawRoutineTheme.Colors.secondary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
@@ -85,11 +107,6 @@ struct PetDetailView: View {
                 }
                 
                 Spacer()
-                
-                // 小狗插图区域（设计稿右侧）
-                Image(systemName: "dog.fill")
-                    .font(.system(size: 40))
-                    .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.15))
             }
         }
     }
@@ -131,34 +148,32 @@ struct PetDetailView: View {
     // MARK: - Age Card
     
     private var ageCard: some View {
-        PRCard(padding: .init(top: 16, leading: 16, bottom: 16, trailing: 16)) {
-            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("年龄")
-                            .font(PawRoutineTheme.PRFont.caption(.medium))
-                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
-                        
-                        Text(pet.ageDescription)
-                            .font(PawRoutineTheme.PRFont.title2(.bold))
-                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                        
-                        Text("≈ \(Int(pet.ageInHumanYears)) 岁（人类年龄）")
-                            .font(PawRoutineTheme.PRFont.caption())
-                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                    }
+        PRCard(padding: .init(top: 20, leading: 20, bottom: 20, trailing: 20)) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Age")
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                     
-                    Spacer()
+                    Text(pet.ageDescription)
+                        .font(PawRoutineTheme.PRFont.title1(.bold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                     
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("出生日期")
-                            .font(PawRoutineTheme.PRFont.caption(.medium))
-                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
-                        
-                        Text(pet.birthDate, format: .dateTime.year().month().day())
-                            .font(PawRoutineTheme.PRFont.bodyText(.semibold))
-                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                    }
+                    Text(String(format: NSLocalizedString("≈ %.0f 岁（人类年龄）", comment: ""), pet.ageInHumanYears))
+                        .font(PawRoutineTheme.PRFont.caption())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("Birth Date")
+                        .font(PawRoutineTheme.PRFont.caption(.medium))
+                        .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                    
+                    Text(pet.birthDate, format: .dateTime.year().month().day())
+                        .font(PawRoutineTheme.PRFont.bodyText(.semibold))
+                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                 }
             }
         }
@@ -173,46 +188,46 @@ struct PetDetailView: View {
                     menuRow(
                         icon: "cross.case.fill",
                         iconColor: .blue,
-                        title: "医疗记录",
-                        subtitle: "\(pet.medicalRecords.count) 条记录"
+                        title: "Medical Records",
+                        subtitle: LocalizedStringKey(String(format: NSLocalizedString("%d 条记录", comment: ""), pet.medicalRecords.count))
                     )
                 }
                 .buttonStyle(.plain)
                 
-                Divider()
+                Divider().padding(.leading, 44)
                 
                 NavigationLink(destination: WeightTrackingView(pet: pet)) {
                     let latestWeight = pet.weightRecords.sorted(by: { $0.date > $1.date }).first?.weight
-                    let weightText = latestWeight != nil ? String(format: "最新 %.1f kg", latestWeight!) : "暂无记录"
+                    let weightText = latestWeight != nil ? String(format: NSLocalizedString("最新 %.1f kg", comment: ""), latestWeight!) : NSLocalizedString("No records", comment: "")
                     menuRow(
                         icon: "chart.line.uptrend.xyaxis",
                         iconColor: .cyan,
-                        title: "体重追踪",
-                        subtitle: weightText
+                        title: "Weight Tracking",
+                        subtitle: LocalizedStringKey(weightText)
                     )
                 }
                 .buttonStyle(.plain)
                 
-                Divider()
+                Divider().padding(.leading, 44)
                 
                 NavigationLink(destination: DocumentsView(pet: pet)) {
                     menuRow(
                         icon: "folder.fill",
                         iconColor: .orange,
-                        title: "证件夹",
-                        subtitle: "\(pet.documents.count) 个文件"
+                        title: "Documents",
+                        subtitle: LocalizedStringKey(String(format: NSLocalizedString("%d 个文件", comment: ""), pet.documents.count))
                     )
                 }
                 .buttonStyle(.plain)
                 
-                Divider()
+                Divider().padding(.leading, 44)
                 
                 NavigationLink(destination: MemoView(pet: pet)) {
                     menuRow(
                         icon: "note.text",
                         iconColor: .green,
-                        title: "备忘录",
-                        subtitle: "记录日常点滴"
+                        title: "Memos",
+                        subtitle: "Record daily moments"
                     )
                 }
                 .buttonStyle(.plain)
@@ -220,21 +235,13 @@ struct PetDetailView: View {
         }
     }
     
-    private func menuRow(icon: String, iconColor: Color, title: String, subtitle: String) -> some View {
+    private func menuRow(icon: String, iconColor: Color, title: LocalizedStringKey, subtitle: LocalizedStringKey) -> some View {
         HStack(spacing: PawRoutineTheme.Spacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.sm)
-                    .fill(iconColor.opacity(0.10))
-                    .frame(width: 32, height: 32)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(iconColor)
-            }
+            PRIconContainer(icon: icon, color: iconColor, size: 32)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(PawRoutineTheme.PRFont.bodyText())
+                    .font(PawRoutineTheme.PRFont.bodyText(.medium))
                     .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                 
                 Text(subtitle)
@@ -249,5 +256,18 @@ struct PetDetailView: View {
                 .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
         }
         .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+    
+    private func deletePet() {
+        // Cancel all notifications for this pet
+        NotificationManager.shared.removeAllNotifications(for: pet)
+        
+        if petStore.selectedPet?.id == pet.id {
+            petStore.selectedPet = nil
+        }
+        modelContext.delete(pet)
+        try? modelContext.save()
+        dismiss()
     }
 }

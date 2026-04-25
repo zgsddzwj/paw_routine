@@ -2,8 +2,6 @@
 //  MedicalRecordsView.swift
 //  PawRoutine
 //
-//  医疗记录 - 从 PawRoutine2 回滚
-//
 
 import SwiftUI
 import SwiftData
@@ -12,40 +10,49 @@ struct MedicalRecordsView: View {
     @Bindable var pet: Pet
     @Environment(\.modelContext) private var modelContext
     @State private var showAddMedical = false
-    @State private var selectedTab: MedicalTab = .vaccine
+    @State private var selectedTab: MedicalTab = .all
+    @State private var selectedRecord: MedicalRecord?
     
     enum MedicalTab: String, CaseIterable {
-        case vaccine = "疫苗记录"
-        case deworm = "驱虫记录"
+        case all = "All"
+        case vaccine = "Vaccine"
+        case deworm = "Deworm"
+        case checkup = "Checkup"
+        case other = "Other"
+        
+        var displayName: String {
+            NSLocalizedString(rawValue, comment: "Medical tab")
+        }
     }
     
     private var filteredRecords: [MedicalRecord] {
         pet.medicalRecords
             .filter { record in
                 switch selectedTab {
-                case .vaccine:
-                    return record.type == .vaccination
-                case .deworm:
-                    return record.type == .dewormingInternal || record.type == .dewormingExternal
+                case .all: return true
+                case .vaccine: return record.type == .vaccination
+                case .deworm: return record.type == .dewormingInternal || record.type == .dewormingExternal
+                case .checkup: return record.type == .checkup
+                case .other: return record.type == .treatment || record.type == .certificate || record.type == .surgery || record.type == .other
                 }
             }
             .sorted { $0.date > $1.date }
     }
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: PawRoutineTheme.Spacing.lg) {
-                // 疫苗/驱虫切换
-                tabPicker
-                
-                // 记录列表
-                recordsList
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                    tabPicker
+                    recordsList
+                }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                .padding(.bottom, PawRoutineTheme.Spacing.xxxl)
             }
-            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
-        .navigationTitle("医疗记录")
+        .navigationTitle("Medical Records")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -59,42 +66,87 @@ struct MedicalRecordsView: View {
         .sheet(isPresented: $showAddMedical) {
             AddMedicalRecordView(pet: pet)
         }
+        .sheet(item: $selectedRecord) { record in
+            EditMedicalRecordView(record: record, pet: pet)
+        }
     }
-    
-    // MARK: - Tab Picker
     
     private var tabPicker: some View {
-        Picker("类型", selection: $selectedTab) {
+        HStack(spacing: 4) {
             ForEach(MedicalTab.allCases, id: \.self) { tab in
-                Text(tab.rawValue).tag(tab)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    Text(tab.displayName)
+                        .font(PawRoutineTheme.PRFont.caption(.semibold))
+                        .foregroundColor(selectedTab == tab ? .white : PawRoutineTheme.Colors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            selectedTab == tab
+                            ? AnyShapeStyle(PawRoutineTheme.Colors.primary)
+                            : AnyShapeStyle(Color.clear),
+                            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.sm, style: .continuous)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-        .padding(.top, PawRoutineTheme.Spacing.sm)
+        .padding(4)
+        .background(PawRoutineTheme.Colors.bgCard)
+        .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md, style: .continuous))
+        .shadow(
+            color: PawRoutineTheme.Shadows.small.color,
+            radius: PawRoutineTheme.Shadows.small.radius,
+            x: PawRoutineTheme.Shadows.small.x,
+            y: PawRoutineTheme.Shadows.small.y
+        )
     }
-    
-    // MARK: - Records List
     
     private var recordsList: some View {
         VStack(spacing: PawRoutineTheme.Spacing.lg) {
             if filteredRecords.isEmpty {
+                let emptyTitle = String(format: NSLocalizedString("暂无%@记录", comment: ""), selectedTab.displayName)
                 PREmptyState(
                     icon: "cross.case.fill",
-                    title: "暂无\(selectedTab.rawValue)",
-                    subtitle: "点击右上角添加记录"
+                    title: LocalizedStringKey(emptyTitle),
+                    subtitle: "Tap top-right to add a record"
                 )
                 .padding(.top, 40)
             } else {
                 ForEach(filteredRecords) { record in
                     MedicalRecordCard(record: record)
+                        .onTapGesture {
+                            selectedRecord = record
+                        }
+                        .contextMenu {
+                            Button {
+                                selectedRecord = record
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive) {
+                                deleteRecord(record)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                 }
             }
         }
     }
+    
+    private func deleteRecord(_ record: MedicalRecord) {
+        if let index = pet.medicalRecords.firstIndex(where: { $0.id == record.id }) {
+            pet.medicalRecords.remove(at: index)
+        }
+        modelContext.delete(record)
+        try? modelContext.save()
+    }
 }
-
-// MARK: - Medical Record Card
 
 struct MedicalRecordCard: View {
     let record: MedicalRecord
@@ -103,57 +155,63 @@ struct MedicalRecordCard: View {
         switch record.type {
         case .vaccination: return .blue
         case .dewormingInternal, .dewormingExternal: return .orange
-        default: return .gray
+        case .checkup: return .green
+        case .treatment: return .red
+        case .certificate: return .purple
+        case .surgery: return .pink
+        case .other: return .gray
         }
     }
     
     var body: some View {
-        PRCard {
-            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.md) {
-                // 标题行
-                HStack {
-                    Text(record.title)
-                        .font(PawRoutineTheme.PRFont.title3(.semibold))
-                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+        PRCard(padding: .init(top: 14, leading: 14, bottom: 14, trailing: 14)) {
+            HStack(spacing: PawRoutineTheme.Spacing.md) {
+                // Type icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(typeColor.opacity(0.12))
+                        .frame(width: 44, height: 44)
                     
-                    Spacer()
-                    
-                    // 已完成标签
-                    Text("已完成")
-                        .font(PawRoutineTheme.PRFont.caption2(.medium))
-                        .foregroundStyle(PawRoutineTheme.Colors.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(PawRoutineTheme.Colors.secondary.opacity(0.12), in: Capsule())
+                    Image(systemName: record.type.systemImage)
+                        .font(.system(size: 20))
+                        .foregroundStyle(typeColor)
                 }
                 
-                // 日期信息
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("上次接种")
-                            .font(PawRoutineTheme.PRFont.caption())
-                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
-                            .frame(width: 70, alignment: .leading)
-                        
-                        Text(record.date, format: .dateTime.year().month().day())
-                            .font(PawRoutineTheme.PRFont.bodyText())
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(record.title)
+                            .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                             .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                         
                         Spacer()
+                        
+                        Text("Completed")
+                            .font(PawRoutineTheme.PRFont.caption2(.semibold))
+                            .foregroundStyle(PawRoutineTheme.Colors.walking)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(PawRoutineTheme.Colors.walking.opacity(0.12), in: Capsule())
                     }
                     
-                    if let nextDue = record.nextDueDate {
-                        HStack {
-                            Text("下次接种")
-                                .font(PawRoutineTheme.PRFont.caption())
-                                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
-                                .frame(width: 70, alignment: .leading)
-                            
-                            Text(nextDue, format: .dateTime.year().month().day())
-                                .font(PawRoutineTheme.PRFont.bodyText())
+                    HStack(spacing: PawRoutineTheme.Spacing.xl) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Last")
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                            Text(record.date, format: .dateTime.year().month().day())
+                                .font(PawRoutineTheme.PRFont.caption(.medium))
                                 .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                            
-                            Spacer()
+                        }
+                        
+                        if let nextDue = record.nextDueDate {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Next")
+                                    .font(PawRoutineTheme.PRFont.caption2())
+                                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                                Text(nextDue, format: .dateTime.year().month().day())
+                                    .font(PawRoutineTheme.PRFont.caption(.medium))
+                                    .foregroundStyle(typeColor)
+                            }
                         }
                     }
                 }

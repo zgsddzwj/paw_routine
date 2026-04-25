@@ -23,12 +23,14 @@ struct AddWeightRecordView: View {
     }
     
     var body: some View {
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     // Weight Input
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("体重")
+                        Text("Weight")
                             .font(.headline)
                         
                         HStack {
@@ -49,10 +51,10 @@ struct AddWeightRecordView: View {
                     
                     // Date Selection
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("测量日期")
+                        Text("Measurement Date")
                             .font(.headline)
                         
-                        DatePicker("日期", selection: $date, displayedComponents: .date)
+                        DatePicker("Date", selection: $date, displayedComponents: .date)
                             .datePickerStyle(.compact)
                     }
                     .padding()
@@ -60,10 +62,10 @@ struct AddWeightRecordView: View {
                     
                     // Notes
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("备注 (可选)")
+                        Text("Notes (Optional)")
                             .font(.headline)
                         
-                        TextField("添加备注信息...", text: $notes, axis: .vertical)
+                        TextField("Add notes...", text: $notes, axis: .vertical)
                             .textFieldStyle(.roundedBorder)
                             .lineLimit(3...6)
                     }
@@ -77,17 +79,17 @@ struct AddWeightRecordView: View {
                 }
                 .padding()
             }
-            .navigationTitle("记录体重")
+            .navigationTitle("Record Weight")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button("Save") {
                         saveWeightRecord()
                     }
                     .fontWeight(.semibold)
@@ -101,6 +103,7 @@ struct AddWeightRecordView: View {
                 weightText = String(format: "%.1f", lastRecord.weight)
                 weight = lastRecord.weight
             }
+        }
         }
     }
     
@@ -134,13 +137,13 @@ struct PreviousWeightSummaryView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("体重对比")
+            Text("Weight Comparison")
                 .font(.headline)
             
             if let lastRecord = lastRecord {
                 VStack(spacing: 8) {
                     HStack {
-                        Text("上次记录")
+                        Text("Last Record")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -152,7 +155,7 @@ struct PreviousWeightSummaryView: View {
                     }
                     
                     HStack {
-                        Text("记录时间")
+                        Text("Record Time")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
@@ -165,7 +168,7 @@ struct PreviousWeightSummaryView: View {
                     
                     if let change = weightChange, currentWeight > 0 {
                         HStack {
-                            Text("体重变化")
+                            Text("Weight Change")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             

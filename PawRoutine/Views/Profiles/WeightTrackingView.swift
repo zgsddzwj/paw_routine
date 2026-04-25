@@ -2,8 +2,6 @@
 //  WeightTrackingView.swift
 //  PawRoutine
 //
-//  体重追踪 - 从 PawRoutine2 回滚
-//
 
 import SwiftUI
 import SwiftData
@@ -16,10 +14,16 @@ struct WeightTrackingView: View {
     
     @State private var showAddWeight = false
     @State private var selectedView: WeightViewType = .chart
+    @State private var showingEditSheet = false
+    @State private var selectedRecord: WeightRecord?
     
     enum WeightViewType: String, CaseIterable {
-        case chart = "图表"
-        case list = "列表"
+        case chart = "Chart"
+        case list = "List"
+        
+        var displayName: String {
+            NSLocalizedString(rawValue, comment: "Weight view type")
+        }
     }
     
     private var sortedRecords: [WeightRecord] {
@@ -27,29 +31,25 @@ struct WeightTrackingView: View {
     }
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: PawRoutineTheme.Spacing.lg) {
-                // 图表/列表切换
-                viewTypePicker
-                
-                // 最新体重摘要
-                latestWeightSummary
-                
-                // 图表或列表
-                if selectedView == .chart {
-                    weightChartCard
-                } else {
-                    weightListCard
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                    latestWeightCard
+                    viewTypePicker
+                    
+                    if selectedView == .chart {
+                        weightChartCard
+                    } else {
+                        weightListCard
+                    }
                 }
-                
-                // 历史记录
-                historyList
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                .padding(.bottom, PawRoutineTheme.Spacing.xxxl)
             }
-            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
-        .navigationTitle("体重追踪")
+        .navigationTitle("Weight Tracking")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -63,132 +63,142 @@ struct WeightTrackingView: View {
         .sheet(isPresented: $showAddWeight) {
             AddWeightRecordView(pet: pet)
         }
-    }
-    
-    // MARK: - View Type Picker
-    
-    private var viewTypePicker: some View {
-        Picker("视图", selection: $selectedView) {
-            ForEach(WeightViewType.allCases, id: \.self) { type in
-                Text(type.rawValue).tag(type)
+        .sheet(isPresented: $showingEditSheet) {
+            if let record = selectedRecord {
+                EditWeightRecordView(record: record, pet: pet)
             }
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, PawRoutineTheme.Spacing.lg)
     }
     
-    // MARK: - Latest Weight Summary
-    
-    private var latestWeightSummary: some View {
-        HStack(spacing: PawRoutineTheme.Spacing.lg) {
-            if let latest = sortedRecords.last {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("最新体重")
-                        .font(PawRoutineTheme.PRFont.caption())
-                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                    
-                    HStack(alignment: .lastTextBaseline, spacing: 4) {
-                        Text("\(latest.weight, specifier: "%.1f")")
-                            .font(PawRoutineTheme.PRFont.largeTitle(.bold))
-                        
-                        Text("kg")
-                            .font(PawRoutineTheme.PRFont.title3())
-                            .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
-                    }
-                    
-                    Text(latest.date, format: .dateTime.year().month().day())
-                        .font(PawRoutineTheme.PRFont.caption())
-                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                }
-                
-                Spacer()
-                
-                // 对比上次
-                if let previous = sortedRecords.dropLast().last {
-                    let diff = latest.weight - previous.weight
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("对比上次")
+    private var latestWeightCard: some View {
+        PRCard(padding: .init(top: 20, leading: 20, bottom: 20, trailing: 20)) {
+            HStack(spacing: PawRoutineTheme.Spacing.lg) {
+                if let latest = sortedRecords.last {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Latest Weight")
                             .font(PawRoutineTheme.PRFont.caption())
                             .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         
-                        HStack(spacing: 2) {
-                            Text(diff >= 0 ? "+" : "-")
-                            Text("\(abs(diff), specifier: "%.1f") kg")
-                            Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text("\(latest.weight, specifier: "%.1f")")
+                                .font(PawRoutineTheme.PRFont.largeTitle(.bold))
+                            
+                            Text("kg")
+                                .font(PawRoutineTheme.PRFont.title3())
+                                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
                         }
-                        .font(PawRoutineTheme.PRFont.bodyText(.semibold))
-                        .foregroundStyle(diff >= 0 ? PawRoutineTheme.Colors.secondary : PawRoutineTheme.Colors.medication)
+                        
+                        Text(latest.date, format: .dateTime.year().month().day())
+                            .font(PawRoutineTheme.PRFont.caption())
+                            .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     }
+                    
+                    Spacer()
+                    
+                    if let previous = sortedRecords.dropLast().last {
+                        let diff = latest.weight - previous.weight
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("Compare with Last")
+                                .font(PawRoutineTheme.PRFont.caption())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                            
+                            HStack(spacing: 4) {
+                                Image(systemName: diff >= 0 ? "arrow.up.forward" : "arrow.down.forward")
+                                    .font(.system(size: 12, weight: .bold))
+                                Text("\(abs(diff), specifier: "%.1f") kg")
+                                    .font(PawRoutineTheme.PRFont.bodyText(.semibold))
+                            }
+                            .foregroundStyle(diff >= 0 ? PawRoutineTheme.Colors.walking : .red)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                (diff >= 0 ? PawRoutineTheme.Colors.walking : .red).opacity(0.1),
+                                in: Capsule()
+                            )
+                        }
+                    }
+                } else {
+                    Text("No weight records")
+                        .font(PawRoutineTheme.PRFont.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 20)
                 }
-            } else {
-                Text("暂无体重记录")
-                    .font(PawRoutineTheme.PRFont.bodyText())
-                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
             }
         }
-        .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-        .padding(.top, PawRoutineTheme.Spacing.sm)
     }
     
-    // MARK: - Weight Chart Card
+    private var viewTypePicker: some View {
+        HStack(spacing: 4) {
+            ForEach(WeightViewType.allCases, id: \.self) { type in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedView = type
+                    }
+                } label: {
+                    Text(type.displayName)
+                        .font(PawRoutineTheme.PRFont.caption(.semibold))
+                        .foregroundColor(selectedView == type ? .white : PawRoutineTheme.Colors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            selectedView == type
+                            ? AnyShapeStyle(PawRoutineTheme.Colors.primary)
+                            : AnyShapeStyle(Color.clear),
+                            in: RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.sm, style: .continuous)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(4)
+        .background(PawRoutineTheme.Colors.bgCard)
+        .clipShape(RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.md, style: .continuous))
+        .shadow(
+            color: PawRoutineTheme.Shadows.small.color,
+            radius: PawRoutineTheme.Shadows.small.radius,
+            x: PawRoutineTheme.Shadows.small.x,
+            y: PawRoutineTheme.Shadows.small.y
+        )
+    }
     
     private var weightChartCard: some View {
         PRCard {
             if sortedRecords.count >= 2 {
                 Chart(sortedRecords) { record in
                     LineMark(
-                        x: .value("日期", record.date),
-                        y: .value("体重", record.weight)
+                        x: .value("Date", record.date),
+                        y: .value("Weight", record.weight)
                     )
                     .foregroundStyle(PawRoutineTheme.Colors.primary)
-                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .lineStyle(StrokeStyle(lineWidth: 2.5))
                     
                     AreaMark(
-                        x: .value("日期", record.date),
-                        y: .value("体重", record.weight)
+                        x: .value("Date", record.date),
+                        y: .value("Weight", record.weight)
                     )
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [PawRoutineTheme.Colors.primary.opacity(0.2), Color.clear],
+                            colors: [PawRoutineTheme.Colors.primary.opacity(0.15), Color.clear],
                             startPoint: .top,
                             endPoint: .bottom
                         )
                     )
                     
                     PointMark(
-                        x: .value("日期", record.date),
-                        y: .value("体重", record.weight)
+                        x: .value("Date", record.date),
+                        y: .value("Weight", record.weight)
                     )
                     .foregroundStyle(PawRoutineTheme.Colors.primary)
-                    .symbolSize(40)
-                    
-                    // 标注最新值
-                    if record.id == sortedRecords.last?.id {
-                        RuleMark(y: .value("体重", record.weight))
-                            .foregroundStyle(Color.clear)
-                            .annotation(position: .top) {
-                                VStack(spacing: 2) {
-                                    Text(record.date, format: .dateTime.year().month().day())
-                                        .font(PawRoutineTheme.PRFont.micro())
-                                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                                    Text("\(record.weight, specifier: "%.1f") kg")
-                                        .font(PawRoutineTheme.PRFont.caption(.bold))
-                                        .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
-                            }
-                    }
+                    .symbolSize(50)
                 }
-                .frame(height: 200)
+                .frame(height: 220)
                 .chartYAxis {
                     AxisMarks(position: .leading) { value in
                         AxisValueLabel {
                             Text("\(value.as(Double.self) ?? 0, specifier: "%.0f")")
-                                .font(PawRoutineTheme.PRFont.micro())
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                         }
                     }
                 }
@@ -197,94 +207,81 @@ struct WeightTrackingView: View {
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
                                 Text(date, format: .dateTime.month().day())
-                                    .font(PawRoutineTheme.PRFont.micro())
+                                    .font(PawRoutineTheme.PRFont.caption2())
+                                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                             }
                         }
                     }
                 }
             } else {
-                Text("至少需要2条记录才能显示图表")
-                    .font(PawRoutineTheme.PRFont.bodyText())
-                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                    .frame(maxWidth: .infinity, minHeight: 160)
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 36))
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.4))
+                    Text(NSLocalizedString("At least 2 records are needed to display the chart", comment: ""))
+                        .font(PawRoutineTheme.PRFont.bodyText())
+                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 160)
             }
         }
     }
     
-    // MARK: - Weight List Card (简化列表视图)
-    
     private var weightListCard: some View {
-        PRCard {
+        PRCard(padding: .init(top: 4, leading: 16, bottom: 4, trailing: 16)) {
             VStack(spacing: 0) {
                 ForEach(Array(sortedRecords.reversed().enumerated()), id: \.element.id) { index, record in
-                    HStack {
+                    HStack(spacing: PawRoutineTheme.Spacing.md) {
+                        // Left color indicator
+                        Circle()
+                            .fill(PawRoutineTheme.Colors.primary.opacity(0.2))
+                            .frame(width: 8, height: 8)
+                        
                         Text(record.date, format: .dateTime.year().month().day())
                             .font(PawRoutineTheme.PRFont.bodyText())
+                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                         
                         Spacer()
                         
                         Text("\(record.weight, specifier: "%.1f") kg")
                             .font(PawRoutineTheme.PRFont.bodyText(.semibold))
                             .monospacedDigit()
+                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                     }
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        selectedRecord = record
+                        showingEditSheet = true
+                    }
+                    .contextMenu {
+                        Button {
+                            selectedRecord = record
+                            showingEditSheet = true
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            deleteRecord(record)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                     
                     if index < sortedRecords.count - 1 {
-                        Divider()
+                        Divider().padding(.leading, 24)
                     }
                 }
             }
         }
     }
     
-    // MARK: - History List
-    
-    private var historyList: some View {
-        PRCard(padding: .init(top: 16, leading: 16, bottom: 4, trailing: 16)) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("历史记录")
-                    .font(PawRoutineTheme.PRFont.title3(.semibold))
-                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                    .padding(.bottom, PawRoutineTheme.Spacing.md)
-                
-                if sortedRecords.isEmpty {
-                    Text("还没有体重记录")
-                        .font(PawRoutineTheme.PRFont.bodyText())
-                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20)
-                } else {
-                    ForEach(Array(sortedRecords.reversed().enumerated()), id: \.element.id) { index, record in
-                        historyRow(record: record, isLast: index == sortedRecords.count - 1)
-                    }
-                }
-            }
+    private func deleteRecord(_ record: WeightRecord) {
+        if let index = pet.weightRecords.firstIndex(where: { $0.id == record.id }) {
+            pet.weightRecords.remove(at: index)
         }
-    }
-    
-    private func historyRow(record: WeightRecord, isLast: Bool) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(record.date, format: .dateTime.year().month().day())
-                    .font(PawRoutineTheme.PRFont.bodyText())
-                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                
-                Spacer()
-                
-                Text("\(record.weight, specifier: "%.1f") kg")
-                    .font(PawRoutineTheme.PRFont.bodyText(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-            }
-            .padding(.vertical, 12)
-            
-            if !isLast {
-                Divider()
-            }
-        }
+        modelContext.delete(record)
+        try? modelContext.save()
     }
 }

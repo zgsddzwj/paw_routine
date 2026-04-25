@@ -28,43 +28,43 @@ struct PawRoutineTheme {
         static let bathroom = Color(red: 0.60, green: 0.50, blue: 0.35)
         
         // 文字色
-        static let textPrimary = Color(red: 0.12, green: 0.12, blue: 0.14)
-        static let textSecondary = Color(red: 0.45, green: 0.45, blue: 0.48)
-        static let textTertiary = Color(red: 0.70, green: 0.70, blue: 0.72)
+        static let textPrimary = Color.primary
+        static let textSecondary = Color.secondary
+        static let textTertiary = Color(red: 0.55, green: 0.55, blue: 0.57)
         
         // 背景色
-        static let bgPrimary = Color(red: 0.97, green: 0.97, blue: 0.98)
-        static let bgCard = Color.white
+        static let bgPrimary = Color(.systemGroupedBackground)
+        static let bgCard = Color(.secondarySystemGroupedBackground)
         static let bgSecondary = Color(red: 0.94, green: 0.94, blue: 0.96)
         
         // 分割线/边框
-        static let separator = Color(red: 0.90, green: 0.90, blue: 0.92)
-        static let border = Color(red: 0.88, green: 0.88, blue: 0.90)
+        static let separator = Color(.separator).opacity(0.6)
+        static let border = Color(.separator).opacity(0.4)
     }
     
     // MARK: - Typography
     
     struct PRFont {
         static func largeTitle(_ weight: Font.Weight = .bold) -> SwiftUI.Font {
-            .system(size: 28, weight: weight, design: .rounded)
+            .system(size: 32, weight: weight, design: .rounded)
         }
-        static func title1(_ weight: Font.Weight = .semibold) -> SwiftUI.Font {
-            .system(size: 22, weight: weight, design: .rounded)
+        static func title1(_ weight: Font.Weight = .bold) -> SwiftUI.Font {
+            .system(size: 24, weight: weight, design: .rounded)
         }
         static func title2(_ weight: Font.Weight = .semibold) -> SwiftUI.Font {
-            .system(size: 18, weight: weight, design: .rounded)
+            .system(size: 20, weight: weight, design: .rounded)
         }
-        static func title3(_ weight: Font.Weight = .medium) -> SwiftUI.Font {
-            .system(size: 16, weight: weight, design: .rounded)
+        static func title3(_ weight: Font.Weight = .semibold) -> SwiftUI.Font {
+            .system(size: 17, weight: weight, design: .rounded)
         }
         static func bodyText(_ weight: Font.Weight = .regular) -> SwiftUI.Font {
-            .system(size: 15, weight: weight, design: .rounded)
+            .system(size: 16, weight: weight, design: .rounded)
         }
         static func caption(_ weight: Font.Weight = .regular) -> SwiftUI.Font {
-            .system(size: 13, weight: weight, design: .rounded)
+            .system(size: 14, weight: weight, design: .rounded)
         }
         static func caption2(_ weight: Font.Weight = .medium) -> SwiftUI.Font {
-            .system(size: 11, weight: weight, design: .rounded)
+            .system(size: 12, weight: weight, design: .rounded)
         }
         static func micro(_ weight: Font.Weight = .medium) -> SwiftUI.Font {
             .system(size: 10, weight: weight, design: .rounded)
@@ -92,6 +92,43 @@ struct PawRoutineTheme {
         static let xl: CGFloat = 20
         static let xxl: CGFloat = 24
         static let full: CGFloat = 9999
+    }
+    
+    // MARK: - Shadows
+    
+    struct Shadows {
+        static let card = ShadowStyle(color: Color.black.opacity(0.06), radius: 12, x: 0, y: 4)
+        static let small = ShadowStyle(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+        static let button = ShadowStyle(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+    }
+    
+    struct ShadowStyle {
+        let color: Color
+        let radius: CGFloat
+        let x: CGFloat
+        let y: CGFloat
+    }
+}
+
+// MARK: - View Extensions
+
+extension View {
+    func prCardStyle(cornerRadius: CGFloat = PawRoutineTheme.Radius.lg, bgColor: Color = PawRoutineTheme.Colors.bgCard) -> some View {
+        self
+            .background(bgColor)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .shadow(
+                color: PawRoutineTheme.Shadows.card.color,
+                radius: PawRoutineTheme.Shadows.card.radius,
+                x: PawRoutineTheme.Shadows.card.x,
+                y: PawRoutineTheme.Shadows.card.y
+            )
+    }
+    
+    func prButtonScale() -> some View {
+        self
+            .buttonStyle(PlainButtonStyle())
+            .contentShape(Rectangle())
     }
 }
 
@@ -140,23 +177,28 @@ struct PRCard<Content: View>: View {
         return content
             .padding(edges)
             .background(bgColor)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .shadow(
+                color: PawRoutineTheme.Shadows.card.color,
+                radius: PawRoutineTheme.Shadows.card.radius,
+                x: PawRoutineTheme.Shadows.card.x,
+                y: PawRoutineTheme.Shadows.card.y
+            )
     }
 }
 
 // MARK: - Section Header
 
 struct PRSectionHeader: View {
-    let title: String
+    let title: LocalizedStringKey
     var trailing: AnyView? = nil
     
-    init(_ title: String, @ViewBuilder trailing: () -> some View) {
+    init(_ title: LocalizedStringKey, @ViewBuilder trailing: () -> some View) {
         self.title = title
         self.trailing = AnyView(trailing())
     }
     
-    init(_ title: String) {
+    init(_ title: LocalizedStringKey) {
         self.title = title
         self.trailing = nil
     }
@@ -164,7 +206,7 @@ struct PRSectionHeader: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(PawRoutineTheme.PRFont.title3(.semibold))
+                .font(PawRoutineTheme.PRFont.title3(.bold))
                 .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
             
             Spacer()
@@ -183,9 +225,9 @@ struct PRProgressRing: View {
     let total: Int
     let current: Int
     let color: Color
-    let label: String
-    var lineWidth: CGFloat = 7
-    var size: CGFloat = 64
+    let label: LocalizedStringKey
+    var lineWidth: CGFloat = 8
+    var size: CGFloat = 90
     
     @State private var animatedProgress: Double = 0
     
@@ -197,23 +239,21 @@ struct PRProgressRing: View {
             Circle()
                 .trim(from: 0, to: animatedProgress)
                 .stroke(
-                    AngularGradient(
-                        colors: [color.opacity(0.7), color, color.opacity(0.7)],
-                        center: .center
-                    ),
+                    color,
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(response: 1.0, dampingFraction: 0.8), value: animatedProgress)
             
             VStack(spacing: 2) {
-                Text("\(current)/\(total)")
-                    .font(PawRoutineTheme.PRFont.caption2(.bold))
-                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                
                 Text(label)
-                    .font(PawRoutineTheme.PRFont.micro())
+                    .font(PawRoutineTheme.PRFont.caption2(.medium))
                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                
+                Text("\(current)/\(total)")
+                    .font(PawRoutineTheme.PRFont.bodyText(.bold))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                    .monospacedDigit()
             }
         }
         .frame(width: size, height: size)
@@ -268,37 +308,40 @@ struct PRPetAvatar: View {
         .overlay(
             Circle()
                 .stroke(isSelected ? PawRoutineTheme.Colors.secondary : Color.clear,
-                       lineWidth: showBorder ? 2.5 : 0)
+                       lineWidth: isSelected ? 3 : 0)
         )
         .overlay(alignment: .bottomTrailing) {
             if isSelected {
                 Circle()
                     .fill(PawRoutineTheme.Colors.secondary)
-                    .frame(width: size * 0.22, height: size * 0.22)
+                    .frame(width: size * 0.24, height: size * 0.24)
                     .overlay(
                         Image(systemName: "checkmark")
-                            .font(.system(size: size * 0.11, weight: .bold))
+                            .font(.system(size: size * 0.12, weight: .bold))
                             .foregroundStyle(.white)
                     )
-                    .offset(x: 1, y: 1)
+                    .offset(x: 2, y: 2)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
             }
         }
+        .scaleEffect(isSelected ? 1.08 : 1.0)
+        .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isSelected)
     }
 }
 
 // MARK: - Tag/Badge
 
 struct PRTag: View {
-    let text: String
+    let text: LocalizedStringKey
     var color: Color = PawRoutineTheme.Colors.primary
     
     var body: some View {
         Text(text)
-            .font(PawRoutineTheme.PRFont.caption2(.medium))
+            .font(PawRoutineTheme.PRFont.caption2(.semibold))
             .foregroundStyle(color)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(color.opacity(0.10), in: Capsule())
+            .background(color.opacity(0.12), in: Capsule())
     }
 }
 
@@ -306,10 +349,10 @@ struct PRTag: View {
 
 struct PREmptyState: View {
     let icon: String
-    let title: String
-    let subtitle: String?
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
     
-    init(icon: String, title: String, subtitle: String? = nil) {
+    init(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil) {
         self.icon = icon
         self.title = title
         self.subtitle = subtitle
@@ -320,8 +363,8 @@ struct PREmptyState: View {
             Spacer()
             
             Image(systemName: icon)
-                .font(.system(size: 52))
-                .foregroundStyle(PawRoutineTheme.Colors.primary.opacity(0.25))
+                .font(.system(size: 56, weight: .light))
+                .foregroundStyle(PawRoutineTheme.Colors.textTertiary.opacity(0.5))
             
             Text(title)
                 .font(PawRoutineTheme.PRFont.title3(.semibold))
@@ -332,10 +375,76 @@ struct PREmptyState: View {
                     .font(PawRoutineTheme.PRFont.bodyText())
                     .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, PawRoutineTheme.Spacing.xxl)
             }
             
             Spacer()
         }
-        .padding(.horizontal, PawRoutineTheme.Spacing.xxl)
+        .padding(.vertical, PawRoutineTheme.Spacing.xxxl)
+    }
+}
+
+// MARK: - List Row Component
+
+struct PRListRow<Leading: View, Trailing: View>: View {
+    let leading: Leading
+    let trailing: Trailing
+    
+    init(
+        @ViewBuilder leading: () -> Leading,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.leading = leading()
+        self.trailing = trailing()
+    }
+    
+    var body: some View {
+        HStack(spacing: PawRoutineTheme.Spacing.md) {
+            leading
+            Spacer()
+            trailing
+        }
+        .padding(.vertical, PawRoutineTheme.Spacing.md)
+    }
+}
+
+// MARK: - Icon Container
+
+struct PRIconContainer: View {
+    let icon: String
+    let color: Color
+    let size: CGFloat
+    
+    init(icon: String, color: Color, size: CGFloat = 32) {
+        self.icon = icon
+        self.color = color
+        self.size = size
+    }
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: PawRoutineTheme.Radius.sm, style: .continuous)
+                .fill(color.opacity(0.12))
+                .frame(width: size, height: size)
+            
+            Image(systemName: icon)
+                .font(.system(size: size * 0.4, weight: .semibold))
+                .foregroundStyle(color)
+        }
+    }
+}
+
+// MARK: - Warm Background
+
+struct PRWarmBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 1.00, green: 0.98, blue: 0.95),
+                Color(red: 1.00, green: 0.95, blue: 0.90)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 }

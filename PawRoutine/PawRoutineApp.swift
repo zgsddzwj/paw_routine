@@ -22,39 +22,30 @@ struct PawRoutineApp: App {
             Document.self,
             AppSettings.self
         ])
-        // 显式指定本地存储 URL，便于 schema 变更时清理旧数据
-        let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let storeURL = appSupportURL.appendingPathComponent("PawRoutine.sqlite")
         
-        let modelConfiguration = ModelConfiguration(
+        // 先尝试 CloudKit；若不可用则回退本地存储
+        let cloudConfig = ModelConfiguration(
             schema: schema,
-            url: storeURL,
-            allowsSave: true,
+            isStoredInMemoryOnly: false,
             cloudKitDatabase: .automatic
         )
-
+        
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [cloudConfig])
+            #if DEBUG
+            print("CloudKit sync enabled")
+            #endif
+            return container
         } catch {
-            // Schema 变更导致加载失败时，删除旧存储并重建（开发阶段常见处理）
-            print("Failed to load ModelContainer: \(error)")
-            print("Attempting to delete old store and recreate...")
-            
-            let fileManager = FileManager.default
-            let urlsToDelete = [
-                storeURL,
-                storeURL.appendingPathExtension("-shm"),
-                storeURL.appendingPathExtension("-wal")
-            ]
-            for url in urlsToDelete {
-                try? fileManager.removeItem(at: url)
-            }
-            
-            do {
-                return try ModelContainer(for: schema, configurations: [modelConfiguration])
-            } catch {
-                fatalError("Could not create ModelContainer after clearing old store: \(error)")
-            }
+            #if DEBUG
+            print("CloudKit unavailable, using local storage: \(error)")
+            #endif
+            let localConfig = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .none
+            )
+            return try! ModelContainer(for: schema, configurations: [localConfig])
         }
     }()
 
@@ -67,13 +58,15 @@ struct PawRoutineApp: App {
     }
     
     init() {
-        // Request notification permissions
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if granted {
-                print("Notification permissions granted")
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
-            }
+        // Set notification delegate to allow foreground banners
+        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        
+        // Start observing StoreKit transactions
+        IAPManager.shared.observeTransactions()
+        
+        // Sync purchase status on launch
+        Task {
+            await IAPManager.shared.syncEntitlements()
         }
     }
 }

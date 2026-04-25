@@ -2,8 +2,6 @@
 //  QuickAddView.swift
 //  PawRoutine
 //
-//  Created by Adward on 2026/4/24.
-//
 
 import SwiftUI
 import SwiftData
@@ -21,58 +19,51 @@ struct QuickAddView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: 8) {
-                    Text("快速记录")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    if let pet = petStore.selectedPet {
-                        Text("为 \(pet.name) 记录活动")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text("请先选择宠物")
-                            .font(.subheadline)
-                            .foregroundColor(.orange)
-                    }
-                }
-                .padding(.top, 20)
-                .padding(.bottom, 24)
+            ZStack {
+                PRWarmBackground().ignoresSafeArea()
                 
-                // Activity Buttons - 3 column grid matching design
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 20) {
-                    ForEach(ActivityType.allCases.filter { $0 != .other }, id: \.self) { activityType in
-                        QuickAddIconButton(
-                            activityType: activityType,
-                            isSelected: selectedActivityType == activityType
-                        ) {
-                            // Quick add with current time
-                            addActivity(type: activityType, timestamp: Date())
-                        } onLongPress: {
-                            // Show custom options (time + notes)
-                            selectedActivityType = activityType
-                            customTime = Date()
-                            notes = ""
-                            showingCustomTime = true
+                VStack(spacing: 0) {
+                    // Header
+                    VStack(spacing: 2) {
+                        Text("Quick Record")
+                            .font(PawRoutineTheme.PRFont.title2(.bold))
+                        
+                        if let pet = petStore.selectedPet {
+                            Text(String(format: NSLocalizedString("为 %@ 记录活动", comment: ""), pet.name))
+                                .font(PawRoutineTheme.PRFont.bodyText())
+                                .foregroundStyle(PawRoutineTheme.Colors.textSecondary)
+                        } else {
+                            Text("Please select a pet first")
+                                .font(PawRoutineTheme.PRFont.bodyText())
+                                .foregroundStyle(PawRoutineTheme.Colors.feeding)
                         }
                     }
+                    .padding(.bottom, 32)
+                    
+                    // Activity Buttons
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: 3), spacing: 24) {
+                        ForEach(ActivityType.allCases.filter { $0 != .other }, id: \.self) { activityType in
+                            QuickAddIconButton(
+                                activityType: activityType,
+                                isSelected: selectedActivityType == activityType
+                            ) {
+                                addActivity(type: activityType, timestamp: Date())
+                            } onLongPress: {
+                                selectedActivityType = activityType
+                                customTime = Date()
+                                notes = ""
+                                showingCustomTime = true
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                    
                 }
-                .padding(.horizontal, 24)
-                
-                Spacer()
-                
-                // Bottom hint text (matching design)
-                Text("长按可修改时间或添加备注")
-                    .font(.caption)
-                    .foregroundColor(.secondary.opacity(0.7))
-                    .padding(.bottom, 16)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
@@ -99,7 +90,6 @@ struct QuickAddView: View {
         selectedPet.activities.append(activity)
         modelContext.insert(activity)
         
-        // Haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
         
@@ -107,7 +97,6 @@ struct QuickAddView: View {
     }
 }
 
-// MARK: - Quick Add Icon Button (matching design - large icon + label below)
 struct QuickAddIconButton: View {
     let activityType: ActivityType
     let isSelected: Bool
@@ -117,22 +106,23 @@ struct QuickAddIconButton: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 12) {
-                // Large icon circle
                 ZStack {
-                    Circle()
-                        .fill(iconBackgroundColor)
-                        .frame(width: 64, height: 64)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color.white)
+                        .frame(width: 72, height: 72)
+                        .shadow(
+                            color: Color.black.opacity(0.06),
+                            radius: 12,
+                            x: 0,
+                            y: 4
+                        )
                     
-                    Text(activityType.icon)
-                        .font(.system(size: 30))
+                    ActivityTypeIcon(type: activityType, size: 36)
                 }
-                .shadow(color: iconBackgroundColor.opacity(0.3), radius: 6, x: 0, y: 3)
                 
-                // Label
-                Text(activityType.rawValue)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
+                Text(activityType.displayName)
+                    .font(PawRoutineTheme.PRFont.caption(.medium))
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
             }
             .frame(maxWidth: .infinity)
         }
@@ -142,22 +132,5 @@ struct QuickAddIconButton: View {
         }
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: isSelected)
-    }
-    
-    private var iconBackgroundColor: Color {
-        switch activityType {
-        case .feeding:
-            return Color(red: 1.0, green: 0.9, blue: 0.85) // Light orange/warm
-        case .waterChange:
-            return Color(red: 0.85, green: 0.93, blue: 1.0) // Light blue
-        case .walking:
-            return Color(red: 0.88, green: 0.96, blue: 0.88) // Light green
-        case .medication:
-            return Color(red: 0.92, green: 0.88, blue: 0.96) // Light purple
-        case .defecation:
-            return Color(red: 0.95, green: 0.92, blue: 0.85) // Light brown
-        case .other:
-            return Color(red: 0.90, green: 0.90, blue: 0.90) // Light gray
-        }
     }
 }

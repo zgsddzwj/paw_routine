@@ -17,14 +17,15 @@ struct CustomActivityView: View {
     @FocusState private var isNotesFieldFocused: Bool
     
     var body: some View {
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
         NavigationView {
             VStack(spacing: 24) {
                 // Activity Type Header
                 VStack(spacing: 12) {
-                    Text(activityType.icon)
-                        .font(.system(size: 60))
+                    ActivityTypeIcon(type: activityType, size: 60)
                     
-                    Text(activityType.rawValue)
+                    Text(activityType.displayName)
                         .font(.title2)
                         .fontWeight(.semibold)
                 }
@@ -32,12 +33,12 @@ struct CustomActivityView: View {
                 
                 // Time Picker
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("时间")
+                    Text("Time")
                         .font(.headline)
                         .foregroundColor(.primary)
                     
                     DatePicker(
-                        "选择时间",
+                        "Select Time",
                         selection: $customTime,
                         displayedComponents: [.date, .hourAndMinute]
                     )
@@ -49,11 +50,11 @@ struct CustomActivityView: View {
                 
                 // Notes Section
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("备注 (可选)")
+                    Text("Notes (Optional)")
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    TextField("添加备注...", text: $notes, axis: .vertical)
+                    TextField("Add notes...", text: $notes, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(3...6)
                         .focused($isNotesFieldFocused)
@@ -65,7 +66,7 @@ struct CustomActivityView: View {
                 
                 // Save Button
                 Button(action: save) {
-                    Text("保存记录")
+                    Text("Save Record")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -75,22 +76,23 @@ struct CustomActivityView: View {
                 .padding(.horizontal)
             }
             .padding(.horizontal)
-            .navigationTitle("自定义记录")
+            .navigationTitle("Custom Record")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button("Save") {
                         save()
                     }
                     .fontWeight(.semibold)
                 }
             }
+        }
         }
     }
     

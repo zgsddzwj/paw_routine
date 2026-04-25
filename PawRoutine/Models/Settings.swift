@@ -8,6 +8,16 @@
 import Foundation
 import SwiftData
 
+enum ThemeMode: String, Codable, CaseIterable {
+    case system = "System"
+    case light = "Light"
+    case dark = "Dark"
+    
+    var displayName: String {
+        NSLocalizedString(rawValue, comment: "Theme mode")
+    }
+}
+
 @Model
 final class AppSettings {
     var id: UUID
@@ -23,6 +33,11 @@ final class AppSettings {
     var walkReminderEnabled: Bool
     var medicationReminderEnabled: Bool
     var isPro: Bool
+    
+    // 新增字段
+    var dewormInternalInterval: Int
+    var dewormExternalInterval: Int
+    var themeMode: ThemeMode
     
     init(
         id: UUID = UUID(),
@@ -49,5 +64,10 @@ final class AppSettings {
         self.walkReminderEnabled = true
         self.medicationReminderEnabled = true
         self.isPro = false
+        
+        // 默认值
+        self.dewormInternalInterval = 90
+        self.dewormExternalInterval = 30
+        self.themeMode = .system
     }
 }

@@ -25,12 +25,16 @@ final class Activity {
 }
 
 enum ActivityType: String, CaseIterable, Codable {
-    case feeding = "喂食"
-    case waterChange = "换水"
-    case walking = "遛狗"
-    case medication = "喂药"
-    case defecation = "排便"
-    case other = "其他"
+    case feeding = "Feeding"
+    case waterChange = "Water Change"
+    case walking = "Walking"
+    case medication = "Medication"
+    case defecation = "Defecation"
+    case other = "Other"
+    
+    var displayName: String {
+        NSLocalizedString(rawValue, comment: "Activity type")
+    }
     
     var icon: String {
         switch self {
@@ -43,6 +47,18 @@ enum ActivityType: String, CaseIterable, Codable {
         }
     }
     
+    /// Assets.xcassets 中的自定义图标名称（如有切图则优先使用）
+    var iconAssetName: String? {
+        switch self {
+        case .feeding: return "icon_feeding"
+        case .waterChange: return "icon_water"
+        case .walking: return "icon_walking"
+        case .medication: return "icon_medication"
+        case .defecation: return "icon_defecation"
+        case .other: return "icon_other"
+        }
+    }
+    
     var systemImage: String {
         switch self {
         case .feeding: return "fork.knife"
@@ -50,7 +66,7 @@ enum ActivityType: String, CaseIterable, Codable {
         case .walking: return "figure.walk"
         case .medication: return "pills.fill"
         case .defecation: return "circle.fill"
-        case .other: return "note.text"
+        case .other: return "doc.text.fill"
         }
     }
     

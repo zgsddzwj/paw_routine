@@ -85,7 +85,7 @@ struct SampleData {
                 let hour = Int.random(in: 8...20)
                 let minute = Int.random(in: 0...59)
                 if let defecationTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: date) {
-                    let activity = Activity(type: .defecation, timestamp: defecationTime, notes: Bool.random() ? "正常" : nil)
+                    let activity = Activity(type: .defecation, timestamp: defecationTime, notes: Bool.random() ? "Normal" : nil)
                     activity.pet = pet
                     activities.append(activity)
                 }
@@ -176,7 +176,7 @@ struct SampleData {
         let calendar = Calendar.current
         let timestamp = calendar.date(bySettingHour: randomHour, minute: randomMinute, second: 0, of: Date()) ?? Date()
         
-        let notes: String? = Bool.random() ? ["正常", "有点拉稀", "很开心", "吃得很香"].randomElement() : nil
+        let notes: String? = Bool.random() ? ["Normal", "有点拉稀", "很开心", "吃得很香"].randomElement() : nil
         
         let activity = Activity(type: randomType, timestamp: timestamp, notes: notes)
         activity.pet = pet
@@ -190,7 +190,9 @@ struct SampleData {
             let pets = try modelContext.fetch(fetchDescriptor)
             pets.forEach { modelContext.delete($0) }
         } catch {
+            #if DEBUG
             print("Failed to clear data: \(error)")
+            #endif
         }
     }
 }

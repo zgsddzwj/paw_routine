@@ -2,7 +2,7 @@
 //  MemoView.swift
 //  PawRoutine
 //
-//  备忘录 - 从 PawRoutine2 回滚，适配 Activity 模型
+//  备忘录
 //
 
 import SwiftUI
@@ -15,29 +15,31 @@ struct MemoView: View {
     @FocusState private var isFocused: Bool
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: PawRoutineTheme.Spacing.lg) {
-                // 添加备忘录输入框
-                memoInputCard
-                
-                // 备忘录列表
-                memosList
+        ZStack {
+            PRWarmBackground().ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: PawRoutineTheme.Spacing.lg) {
+                    memoInputCard
+                    memosList
+                }
+                .padding(.horizontal, PawRoutineTheme.Spacing.lg)
+                .padding(.top, PawRoutineTheme.Spacing.sm)
+                .padding(.bottom, PawRoutineTheme.Spacing.xxxl)
             }
-            .padding(.horizontal, PawRoutineTheme.Spacing.lg)
-            .padding(.bottom, PawRoutineTheme.Spacing.xxl)
         }
-        .background(PawRoutineTheme.Colors.bgPrimary.ignoresSafeArea())
-        .navigationTitle("备忘录")
+        .navigationTitle("Memos")
         .navigationBarTitleDisplayMode(.inline)
     }
     
     private var memoInputCard: some View {
-        PRCard {
+        PRCard(padding: .init(top: 16, leading: 16, bottom: 16, trailing: 16)) {
             VStack(spacing: PawRoutineTheme.Spacing.md) {
-                TextField("记录关于 \(pet.name) 的点滴...", text: $newMemoText, axis: .vertical)
+                TextField(String(format: NSLocalizedString("记录关于 %@ 的点滴...", comment: ""), pet.name), text: $newMemoText, axis: .vertical)
                     .font(PawRoutineTheme.PRFont.bodyText())
                     .lineLimit(3...6)
                     .focused($isFocused)
+                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
                 
                 HStack {
                     Spacer()
@@ -45,10 +47,10 @@ struct MemoView: View {
                     Button {
                         addMemo()
                     } label: {
-                        Text("保存")
+                        Text("Save")
                             .font(PawRoutineTheme.PRFont.caption(.semibold))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, 18)
                             .padding(.vertical, 8)
                             .background(
                                 newMemoText.isEmpty ? PawRoutineTheme.Colors.primary.opacity(0.4) : PawRoutineTheme.Colors.primary,
@@ -70,22 +72,26 @@ struct MemoView: View {
             if memos.isEmpty && newMemoText.isEmpty {
                 PREmptyState(
                     icon: "note.text",
-                    title: "还没有备忘录",
-                    subtitle: "在上面输入框记录关于 \(pet.name) 的日常点滴"
+                    title: "No notes yet",
+                    subtitle: "Record daily moments about \(pet.name) in the input box above"
                 )
                 .padding(.top, 40)
             } else {
                 ForEach(memos.prefix(10)) { record in
-                    if let note = record.notes {
-                        MemoCard(
-                            content: note,
-                            date: record.timestamp,
-                            type: record.type
-                        )
+                    MemoCardRow(record: record) {
+                        deleteMemo(record)
                     }
                 }
             }
         }
+    }
+    
+    private func deleteMemo(_ record: Activity) {
+        if let index = pet.activities.firstIndex(where: { $0.id == record.id }) {
+            pet.activities.remove(at: index)
+        }
+        modelContext.delete(record)
+        try? modelContext.save()
     }
     
     private func addMemo() {
@@ -101,31 +107,50 @@ struct MemoView: View {
     }
 }
 
-// MARK: - Memo Card
+// MARK: - Memo Card Row
 
-struct MemoCard: View {
-    let content: String
-    let date: Date
-    let type: ActivityType
+struct MemoCardRow: View {
+    let record: Activity
+    let onDelete: () -> Void
     
     var body: some View {
-        PRCard {
-            VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
-                Text(content)
-                    .font(PawRoutineTheme.PRFont.bodyText())
-                    .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
-                    .lineLimit(nil)
-                
-                HStack {
-                    Text(type.icon)
-                        .font(.caption)
-                    
-                    Text(date, format: .dateTime.year().month().day().hour().minute())
-                        .font(PawRoutineTheme.PRFont.caption2())
-                        .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
-                    
-                    Spacer()
+        HStack(spacing: PawRoutineTheme.Spacing.sm) {
+            // Left accent bar
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(PawRoutineTheme.Colors.primary.opacity(0.5))
+                .frame(width: 4)
+                .padding(.vertical, 6)
+            
+            if let note = record.notes {
+                PRCard(padding: .init(top: 14, leading: 14, bottom: 14, trailing: 14)) {
+                    VStack(alignment: .leading, spacing: PawRoutineTheme.Spacing.sm) {
+                        Text(note)
+                            .font(PawRoutineTheme.PRFont.bodyText())
+                            .foregroundStyle(PawRoutineTheme.Colors.textPrimary)
+                            .lineLimit(nil)
+                        
+                        HStack(spacing: 6) {
+                            Image(systemName: "note.text")
+                                .font(.system(size: 12))
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                            
+                            Text(record.timestamp, format: .dateTime.year().month().day().hour().minute())
+                                .font(PawRoutineTheme.PRFont.caption2())
+                                .foregroundStyle(PawRoutineTheme.Colors.textTertiary)
+                            
+                            Spacer()
+                        }
+                    }
                 }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete", systemImage: "trash")
             }
         }
     }
